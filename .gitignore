@@ -1,0 +1,6 @@
+node_modules/
+*.db-shm
+*.db-wal
+*.db
+.dist/
+data/fenu.db

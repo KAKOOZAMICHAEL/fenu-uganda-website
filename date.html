@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HeartLink - Dating</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+    <style>
+        .card {
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .swipe-left {
+            transform: translateX(-500px) rotate(-30deg);
+            opacity: 0;
+        }
+
+        .swipe-right {
+            transform: translateX(500px) rotate(30deg);
+            opacity: 0;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-900 text-white min-h-screen">
+
+    <!-- Header -->
+    <header class="bg-black sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+            <h1 class="text-3xl font-bold text-pink-500">❤️ HeartLink</h1>
+            <nav class="flex gap-8 text-lg">
+                <a href="#" class="hover:text-pink-500">Discover</a>
+                <a href="#" class="hover:text-pink-500">Matches</a>
+                <a href="#" class="hover:text-pink-500">Messages</a>
+            </nav>
+            <div class="flex items-center gap-4">
+                <button onclick="showProfile()"
+                    class="w-10 h-10 bg-pink-600 rounded-full flex items-center justify-center">
+                    👤
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-6xl mx-auto px-4 py-8">
+        <div class="flex gap-8">
+
+            <!-- Main Swipe Area -->
+            <div class="flex-1 flex flex-col items-center">
+                <h2 class="text-2xl font-semibold mb-6">People near Kampala</h2>
+
+                <div id="card"
+                    class="card relative w-96 h-[520px] bg-zinc-800 rounded-3xl overflow-hidden shadow-2xl cursor-grab">
+                    <img id="profile-img" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=600"
+                        class="w-full h-96 object-cover">
+
+                    <div class="p-6">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h3 id="name" class="text-3xl font-bold">Sophia, 24</h3>
+                                <p id="location" class="text-gray-400">Kampala, Uganda</p>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-green-400 text-sm">● Online</span>
+                            </div>
+                        </div>
+
+                        <p id="bio" class="mt-4 text-gray-300 line-clamp-3">
+                            Love hiking, good food, and deep conversations. Looking for someone who can make me laugh ❤️
+                        </p>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="absolute bottom-8 left-0 right-0 flex justify-center gap-12">
+                        <button onclick="swipeLeft()"
+                            class="w-16 h-16 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center text-4xl transition">
+                            ✕
+                        </button>
+                        <button onclick="superLike()"
+                            class="w-16 h-16 bg-yellow-400 hover:bg-yellow-500 rounded-full flex items-center justify-center text-4xl transition -mt-4">
+                            ⭐
+                        </button>
+                        <button onclick="swipeRight()"
+                            class="w-16 h-16 bg-green-500 hover:bg-green-600 rounded-full flex items-center justify-center text-4xl transition">
+                            ❤️
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mt-8 text-sm text-gray-500">
+                    Swipe or use buttons • 124 people nearby
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="w-80 space-y-6">
+                <!-- Matches -->
+                <div class="bg-zinc-800 rounded-2xl p-6">
+                    <h3 class="font-semibold mb-4 flex items-center gap-2">
+                        <i class="fas fa-fire text-orange-500"></i> New Matches
+                    </h3>
+                    <div class="grid grid-cols-4 gap-3">
+                        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150"
+                            class="w-16 h-16 rounded-xl object-cover ring-2 ring-pink-500">
+                        <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w

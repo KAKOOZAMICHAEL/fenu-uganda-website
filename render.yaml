@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: fenu-uganda-webproject
+    runtime: node
+    buildCommand: npm install
+    startCommand: node index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: RENDER
+        value: "true"
+    disk:
+      name: data
+      mountPath: /var/data
+      sizeGB: 1

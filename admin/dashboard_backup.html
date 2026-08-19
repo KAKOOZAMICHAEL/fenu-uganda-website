@@ -1,0 +1,2332 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>CMS Dashboard - FENU Uganda</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet" />
+    <style>
+        :root {
+            --fenu-orange: #fe6832;
+            --fenu-blue: #0f2f45;
+            --fenu-mid-blue: #1ca4e3;
+            --fenu-dark: #0d1b2a;
+        }
+        *, *::before, *::after { box-sizing: border-box; }
+        body {
+            background: #f0f2f5;
+            font-family: 'Open Sans', sans-serif;
+            color: #333;
+            margin: 0;
+        }
+
+        /* ── TOP NAVBAR ── */
+        .navbar-admin {
+            background: linear-gradient(90deg, #0d1b2a 0%, #0f2f45 60%, #1a4a6e 100%);
+            color: white;
+            height: 68px;
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.25);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .navbar-admin .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .navbar-admin .brand img {
+            height: 46px;
+            width: auto;
+            object-fit: contain;
+            border-radius: 4px;
+        }
+        .navbar-admin .brand-text {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 0.03em;
+        }
+        .navbar-admin .brand-text span {
+            color: var(--fenu-orange);
+        }
+        .navbar-admin .nav-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .btn-view-site {
+            background: var(--fenu-orange);
+            color: #fff !important;
+            border: none;
+            padding: 7px 16px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+        .btn-view-site:hover { opacity: 0.88; }
+        .btn-logout {
+            background: transparent;
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.4);
+            padding: 7px 16px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-logout:hover { background: rgba(255,255,255,0.1); }
+
+        /* ── LAYOUT ── */
+        .dashboard-body {
+            display: flex;
+            height: calc(100vh - 68px);
+            overflow: hidden;
+        }
+
+        /* ── SIDEBAR ── */
+        .sidebar {
+            width: 220px;
+            min-width: 220px;
+            background: #0d1b2a;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            transition: margin-left 0.3s ease;
+        }
+        .sidebar.collapsed {
+            margin-left: -220px;
+        }
+        .sidebar-section-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.35);
+            padding: 18px 18px 6px;
+        }
+        .nav-link-custom {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 11px 18px;
+            color: rgba(255,255,255,0.72);
+            font-size: 0.88rem;
+            cursor: pointer;
+            border-left: 3px solid transparent;
+            transition: all 0.18s;
+            text-decoration: none;
+        }
+        .nav-link-custom i {
+            width: 18px;
+            text-align: center;
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.45);
+            transition: color 0.18s;
+        }
+        .nav-link-custom:hover {
+            background: rgba(255,255,255,0.07);
+            color: #fff;
+        }
+        .nav-link-custom:hover i { color: var(--fenu-orange); }
+        .nav-link-custom.active {
+            background: rgba(254,104,50,0.15);
+            color: #fff;
+            border-left-color: var(--fenu-orange);
+            font-weight: 600;
+        }
+        .nav-link-custom.active i { color: var(--fenu-orange); }
+        .sidebar-divider {
+            border-top: 1px solid rgba(255,255,255,0.08);
+            margin: 8px 0;
+        }
+
+        /* ── MAIN CONTENT WRAPPER ── */
+        .main-wrapper {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* ── EDITOR PANEL ── */
+        .main-content {
+            width: 480px;
+            min-width: 380px;
+            padding: 24px 24px;
+            overflow-y: auto;
+            background: #f0f2f5;
+            border-right: 1px solid #dde2e8;
+            flex-shrink: 0;
+            transition: margin-left 0.3s ease;
+        }
+        .main-content.collapsed {
+            margin-left: -480px;
+        }
+
+        /* ── PREVIEW PANEL ── */
+        .preview-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #1a1a2e;
+            overflow: hidden;
+        }
+        .preview-toolbar {
+            background: #0d1b2a;
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+            border-bottom: 2px solid var(--fenu-orange);
+        }
+        .btn-toggle-sidebar, .btn-toggle-editor {
+            background: rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.8);
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 5px 12px;
+            border-radius: 5px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .btn-toggle-sidebar:hover, .btn-toggle-editor:hover {
+            background: rgba(255,255,255,0.2);
+            color: #fff;
+        }
+        .btn-toggle-sidebar.active, .btn-toggle-editor.active {
+            background: var(--fenu-orange);
+            color: #fff;
+            border-color: var(--fenu-orange);
+        }
+        .device-preview-btns {
+            display: flex;
+            gap: 4px;
+            margin-left: auto;
+        }
+        .btn-device {
+            background: rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.6);
+            border: 1px solid rgba(255,255,255,0.15);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-device:hover { background: rgba(255,255,255,0.15); color: #fff; }
+        .btn-device.active {
+            background: var(--fenu-orange);
+            color: #fff;
+            border-color: var(--fenu-orange);
+        }
+        .preview-toolbar .preview-label {
+            color: rgba(255,255,255,0.7);
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+        .preview-toolbar .preview-url {
+            flex: 1;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 6px;
+            color: rgba(255,255,255,0.85);
+            font-size: 0.82rem;
+            padding: 4px 10px;
+            font-family: monospace;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .btn-refresh-preview {
+            background: var(--fenu-orange);
+            color: white;
+            border: none;
+            padding: 5px 14px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: opacity 0.2s;
+        }
+        .btn-refresh-preview:hover { opacity: 0.88; }
+        .btn-wysiwyg-toggle {
+            background: rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.7);
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 5px 14px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+        .btn-wysiwyg-toggle.active {
+            background: #1ca4e3;
+            color: #fff;
+            border-color: #1ca4e3;
+        }
+        /* inline edit popup */
+        .inline-edit-popup {
+            position: fixed;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.22);
+            padding: 16px 18px;
+            z-index: 99999;
+            min-width: 320px;
+            max-width: 420px;
+            border-top: 3px solid var(--fenu-orange);
+            display: none;
+        }
+        .inline-edit-popup .popup-title {
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--fenu-orange);
+            margin-bottom: 10px;
+        }
+        .inline-edit-popup textarea, .inline-edit-popup input {
+            width: 100%;
+            border: 1px solid #dde2e8;
+            border-radius: 7px;
+            padding: 8px 10px;
+            font-size: 0.9rem;
+            font-family: inherit;
+            resize: vertical;
+            margin-bottom: 10px;
+        }
+        .inline-edit-popup textarea:focus, .inline-edit-popup input:focus {
+            outline: none;
+            border-color: var(--fenu-orange);
+            box-shadow: 0 0 0 0.2rem rgba(254,104,50,0.15);
+        }
+        .inline-edit-popup .popup-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+        .btn-popup-save {
+            background: var(--fenu-orange);
+            color: #fff;
+            border: none;
+            padding: 7px 18px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+        .btn-popup-cancel {
+            background: #f0f2f5;
+            color: #555;
+            border: none;
+            padding: 7px 14px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+        .preview-frame-wrap {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #1a1a2e;
+        }
+        .preview-frame-wrap iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: #fff;
+            transition: all 0.3s ease;
+        }
+        .preview-frame-wrap.tablet iframe {
+            width: 768px;
+            height: 1024px;
+            border: 8px solid #333;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+        .preview-frame-wrap.mobile iframe {
+            width: 375px;
+            height: 667px;
+            border: 8px solid #333;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+        .preview-loading {
+            position: absolute;
+            inset: 0;
+            background: #0d1b2a;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: rgba(255,255,255,0.6);
+            font-size: 0.9rem;
+            gap: 12px;
+            z-index: 10;
+            transition: opacity 0.3s;
+        }
+        .preview-loading.hidden { opacity: 0; pointer-events: none; }
+
+        /* ── CARDS ── */
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+            margin-bottom: 22px;
+            background: #fff;
+        }
+        .card-header {
+            background: linear-gradient(90deg, #fff 60%, #fff8f5 100%);
+            border-bottom: 2px solid var(--fenu-orange);
+            padding: 14px 22px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            border-radius: 12px 12px 0 0 !important;
+            color: var(--fenu-blue);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s;
+        }
+        .card-header:hover {
+            background: linear-gradient(90deg, #fff8f5 60%, #fff 100%);
+        }
+        .card-header .section-icon {
+            width: 30px;
+            height: 30px;
+            background: var(--fenu-orange);
+            border-radius: 7px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .card-header .section-icon i {
+            color: #fff;
+            font-size: 0.8rem;
+            margin: 0;
+        }
+        .card-header .collapse-icon {
+            margin-left: auto;
+            color: var(--fenu-orange);
+            transition: transform 0.3s;
+        }
+        .card-header.collapsed .collapse-icon {
+            transform: rotate(-90deg);
+        }
+        .card-body { 
+            padding: 20px 22px;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+            overflow: hidden;
+        }
+        .card-body.collapsed {
+            max-height: 0 !important;
+            padding: 0 22px !important;
+            border: none;
+        }
+
+        /* ── FORM ELEMENTS ── */
+        .field-group { margin-bottom: 16px; }
+        .field-label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 0.82rem;
+            color: #555;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .field-label i { color: var(--fenu-orange); font-size: 0.75rem; }
+        .form-control {
+            border-radius: 7px;
+            border: 1px solid #dde2e8;
+            font-size: 0.9rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .form-control:focus {
+            border-color: var(--fenu-orange);
+            box-shadow: 0 0 0 0.2rem rgba(254,104,50,0.15);
+        }
+        .form-control.live-updating {
+            border-color: #1ca4e3;
+            box-shadow: 0 0 0 0.2rem rgba(28,164,227,0.15);
+        }
+        textarea.form-control { resize: vertical; min-height: 80px; }
+
+        /* ── IMAGE PREVIEW ── */
+        .img-preview-wrap {
+            margin-top: 8px;
+            display: none;
+        }
+        .img-preview-wrap img {
+            max-width: 100%;
+            max-height: 120px;
+            border-radius: 8px;
+            border: 2px solid #eee;
+            object-fit: cover;
+        }
+        .img-preview-wrap.visible { display: block; }
+
+        /* ── SAVE FOOTER ── */
+        .form-save-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-top: 14px;
+            border-top: 1px solid #f0f0f0;
+            margin-top: 6px;
+        }
+        .form-save-footer .save-hint {
+            font-size: 0.78rem;
+            color: #aaa;
+        }
+        .btn-fenu {
+            background: linear-gradient(90deg, var(--fenu-orange), #e8501a);
+            color: white;
+            border: none;
+            padding: 9px 22px;
+            border-radius: 7px;
+            font-weight: 600;
+            font-size: 0.88rem;
+            transition: transform 0.15s, opacity 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+        .btn-fenu:hover { transform: translateY(-1px); opacity: 0.92; color: white; }
+        .btn-fenu:disabled { opacity: 0.6; transform: none; }
+
+        /* ── BUTTONS ── */
+        .btn-add  { background: #1ca4e3; color: white; border: none; padding: 7px 18px; border-radius: 7px; font-weight: 600; font-size: 0.85rem; }
+        .btn-delete { background: #dc3545; color: white; border: none; padding: 6px 14px; border-radius: 7px; font-size: 0.85rem; }
+
+        .page-title-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 22px;
+        }
+        .page-title-bar h2 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: var(--fenu-blue);
+            margin: 0;
+        }
+        .page-title-bar .page-badge {
+            background: var(--fenu-orange);
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 4px 12px;
+            border-radius: 999px;
+            letter-spacing: 0.04em;
+        }
+        .help-banner {
+            background: linear-gradient(135deg, #e3f2fd 0%, #f0f8ff 100%);
+            border-left: 4px solid #1ca4e3;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+            color: #0d47a1;
+        }
+        .help-banner i { color: #1ca4e3; margin-right: 8px; }
+        .help-banner strong { color: #0d47a1; }
+
+        /* ── SAVE TOAST ── */
+        .save-indicator {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            display: none;
+            padding: 12px 22px;
+            border-radius: 50px;
+            background: linear-gradient(90deg, #1ca4e3, var(--fenu-orange));
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+            z-index: 9999;
+        }
+
+        /* ── MISC ── */
+        .collection-item {
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+        .image-preview {
+            max-width: 200px;
+            max-height: 150px;
+            margin-top: 10px;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+    <!-- TOP NAVBAR -->
+    <nav class="navbar-admin">
+        <div class="brand">
+            <img src="../img/FINAL LOGO FEB, 2026 (1).jpg" alt="FENU Logo" />
+            <span class="brand-text">FENU <span>Content Manager</span></span>
+        </div>
+        <div class="nav-actions">
+            <a href="/" target="_blank" class="btn-view-site"><i class="fa fa-eye me-1"></i> View Site</a>
+            <button id="logoutBtn" class="btn-logout"><i class="fa fa-sign-out-alt me-1"></i> Logout</button>
+        </div>
+    </nav>
+
+    <!-- DASHBOARD BODY -->
+    <div class="dashboard-body">
+
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+            <div class="sidebar-section-label">Pages</div>
+            <div class="nav flex-column" id="pageTabs">
+                <div class="nav-link-custom active" data-page="home"><i class="fa fa-home"></i> Home</div>
+                <div class="nav-link-custom" data-page="about"><i class="fa fa-info-circle"></i> About</div>
+                <div class="nav-link-custom" data-page="thematic"><i class="fa fa-layer-group"></i> Thematic</div>
+                <div class="nav-link-custom" data-page="work"><i class="fa fa-briefcase"></i> Work</div>
+                <div class="nav-link-custom" data-page="partners"><i class="fa fa-handshake"></i> Partners</div>
+                <div class="nav-link-custom" data-page="gallery"><i class="fa fa-images"></i> Gallery</div>
+                <div class="nav-link-custom" data-page="publications"><i class="fa fa-book"></i> Publications</div>
+                <div class="nav-link-custom" data-page="contact"><i class="fa fa-envelope"></i> Contact</div>
+                <div class="sidebar-divider"></div>
+                <div class="sidebar-section-label">Content</div>
+                <div class="nav-link-custom" data-page="manage-partners"><i class="fa fa-handshake"></i> Manage Partners</div>
+                <div class="nav-link-custom" data-page="manage-team"><i class="fa fa-users"></i> Manage Team</div>
+                <div class="nav-link-custom" data-page="manage-testimonials"><i class="fa fa-quote-right"></i> Testimonials</div>
+                <div class="nav-link-custom" data-page="manage-whyus-stats"><i class="fa fa-chart-bar"></i> Why Us Statistics</div>
+                <div class="nav-link-custom" data-page="manage-gallery"><i class="fa fa-images"></i> Manage Gallery</div>
+                <div class="sidebar-divider"></div>
+                <div class="sidebar-section-label">System</div>
+                <div class="nav-link-custom" data-page="global"><i class="fa fa-cog"></i> Global Settings</div>
+                <div class="nav-link-custom" data-page="audit"><i class="fa fa-history"></i> Audit Log</div>
+            </div>
+        </div>
+
+        <!-- MAIN WRAPPER -->
+        <div class="main-wrapper">
+
+            <!-- EDITOR PANEL -->
+            <div class="main-content">
+                <div id="pageEditor">
+                    <div class="text-center py-5">
+                        <div class="spinner-border" style="color: var(--fenu-orange)"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PREVIEW PANEL -->
+            <div class="preview-panel">
+                <div class="preview-toolbar">
+                    <button class="btn-toggle-sidebar" id="toggleSidebar" onclick="toggleSidebar()" title="Toggle Sidebar"><i class="fa fa-bars"></i></button>
+                    <button class="btn-toggle-editor" id="toggleEditor" onclick="toggleEditor()" title="Toggle Editor Panel"><i class="fa fa-edit"></i></button>
+                    <span class="preview-label"><i class="fa fa-desktop me-1"></i> Live Preview</span>
+                    <span class="preview-url" id="previewUrl">/index.html</span>
+                    <div class="device-preview-btns">
+                        <button class="btn-device active" data-device="desktop" onclick="setPreviewDevice('desktop')"><i class="fa fa-desktop"></i></button>
+                        <button class="btn-device" data-device="tablet" onclick="setPreviewDevice('tablet')"><i class="fa fa-tablet-alt"></i></button>
+                        <button class="btn-device" data-device="mobile" onclick="setPreviewDevice('mobile')"><i class="fa fa-mobile-alt"></i></button>
+                    </div>
+                    <button class="btn-wysiwyg-toggle" id="wysiwygToggle" onclick="toggleWysiwyg()"><i class="fa fa-mouse-pointer me-1"></i> Click to Edit</button>
+                    <button class="btn-refresh-preview" onclick="refreshPreview()"><i class="fa fa-sync-alt me-1"></i> Refresh</button>
+                </div>
+                <div class="preview-frame-wrap">
+                    <div class="preview-loading" id="previewLoading">
+                        <div class="spinner-border" style="color: var(--fenu-orange); width:2rem; height:2rem;"></div>
+                        <span>Loading preview...</span>
+                    </div>
+                    <iframe id="sitePreview" src="/index.html"></iframe>
+                </div>
+            </div>
+
+        </div>
+
+    <div class="save-indicator" id="saveIndicator"><i class="fa fa-check me-2"></i>Saved Successfully!</div>
+
+    <!-- INLINE EDIT POPUP -->
+    <div class="inline-edit-popup" id="inlineEditPopup">
+        <div class="popup-title"><i class="fa fa-pen me-1"></i> Edit Content</div>
+        <div id="popupFieldWrap"></div>
+        <div class="popup-actions">
+            <button class="btn-popup-cancel" onclick="closeInlinePopup()">Cancel</button>
+            <button class="btn-popup-save" onclick="saveInlineEdit()"><i class="fa fa-save me-1"></i> Save</button>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+
+    <script>
+        const socket = io();
+
+        // ── WYSIWYG INLINE EDITING ──
+        let wysiwygActive = false;
+        let currentEditEl = null;
+        let currentEditData = null;
+
+        function toggleWysiwyg() {
+            wysiwygActive = !wysiwygActive;
+            const btn = document.getElementById('wysiwygToggle');
+            btn.classList.toggle('active', wysiwygActive);
+            btn.innerHTML = wysiwygActive
+                ? '<i class="fa fa-times me-1"></i> Exit Edit Mode'
+                : '<i class="fa fa-mouse-pointer me-1"></i> Click to Edit';
+            injectWysiwygIntoFrame();
+            if (!wysiwygActive) closeInlinePopup();
+        }
+
+        function injectWysiwygIntoFrame() {
+            const frame = document.getElementById('sitePreview');
+            try {
+                const doc = frame.contentDocument;
+                if (!doc) return;
+
+                // Remove previous injection
+                const old = doc.getElementById('__fenu_wysiwyg_style');
+                if (old) old.remove();
+                doc.querySelectorAll('[data-cms-id]').forEach(el => {
+                    el.style.outline = '';
+                    el.style.cursor = '';
+                    el.onclick = null;
+                    el.onmouseenter = null;
+                    el.onmouseleave = null;
+                });
+
+                if (!wysiwygActive) return;
+
+                // Inject highlight style
+                const style = doc.createElement('style');
+                style.id = '__fenu_wysiwyg_style';
+                style.textContent = `
+                    [data-cms-id]:hover { outline: 2px dashed #fe6832 !important; cursor: pointer !important; }
+                    [data-cms-id].fenu-editing { outline: 2px solid #fe6832 !important; background: rgba(254,104,50,0.06) !important; }
+                `;
+                doc.head.appendChild(style);
+
+                // Attach click listeners to all editable elements
+                doc.querySelectorAll('[data-cms-id]').forEach(el => {
+                    el.onclick = (e) => {
+                        if (!wysiwygActive) return;
+                        e.preventDefault();
+                        e.stopPropagation();
+                        openInlinePopup(el, frame);
+                    };
+                });
+            } catch(err) {
+                console.warn('WYSIWYG inject error (cross-origin?):', err);
+            }
+        }
+
+        function openInlinePopup(el, frame) {
+            // Deselect previous
+            if (currentEditEl) currentEditEl.classList.remove('fenu-editing');
+            currentEditEl = el;
+            el.classList.add('fenu-editing');
+
+            const cmsId = el.getAttribute('data-cms-id');
+            const currentText = el.innerText || el.textContent || '';
+            const isLong = currentText.length > 80 || el.tagName === 'P' || el.tagName === 'SPAN';
+
+            // Find which page this frame is showing
+            const frameUrl = frame.contentWindow.location.pathname;
+            const pagePath = frameUrl.replace(/^\//, '') || 'index.html';
+
+            currentEditData = { cmsId, pagePath, el };
+
+            const field = isLong
+                ? `<textarea rows="4" id="inlineEditInput">${currentText.trim()}</textarea>`
+                : `<input type="text" id="inlineEditInput" value="${currentText.trim().replace(/"/g, '&quot;')}">` ;
+
+            document.getElementById('popupFieldWrap').innerHTML = `
+                <div style="font-size:0.78rem;color:#888;margin-bottom:6px">Field: <code style="background:#f0f2f5;padding:2px 6px;border-radius:4px">${cmsId}</code></div>
+                ${field}
+            `;
+
+            // Position popup near the clicked element
+            const frameRect = frame.getBoundingClientRect();
+            const elRect = el.getBoundingClientRect();
+            const popup = document.getElementById('inlineEditPopup');
+            popup.style.display = 'block';
+
+            // Position: try below element, fall back to center
+            let top = frameRect.top + elRect.top + elRect.height + 8;
+            let left = frameRect.left + elRect.left;
+            if (top + 200 > window.innerHeight) top = frameRect.top + elRect.top - 180;
+            if (left + 420 > window.innerWidth) left = window.innerWidth - 440;
+            popup.style.top  = Math.max(10, top)  + 'px';
+            popup.style.left = Math.max(10, left) + 'px';
+
+            setTimeout(() => document.getElementById('inlineEditInput').focus(), 50);
+        }
+
+        function closeInlinePopup() {
+            document.getElementById('inlineEditPopup').style.display = 'none';
+            if (currentEditEl) {
+                currentEditEl.classList.remove('fenu-editing');
+                currentEditEl = null;
+            }
+            currentEditData = null;
+        }
+
+        async function saveInlineEdit() {
+            if (!currentEditData) return;
+            const { cmsId, pagePath, el } = currentEditData;
+            const newValue = document.getElementById('inlineEditInput').value;
+            const saveBtn = document.querySelector('.btn-popup-save');
+            saveBtn.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i> Saving...';
+            saveBtn.disabled = true;
+
+            try {
+                await fetch('/api/cms/sections', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        page_path: pagePath,
+                        section_key: cmsId,
+                        selector: `[data-cms-id="${cmsId}"]`,
+                        content_html: newValue,
+                        is_active: 1
+                    })
+                });
+                // Update element in iframe immediately
+                el.innerHTML = newValue;
+                // Sync to form field if visible
+                $(`[data-cms-id="${cmsId}"]`).val(newValue);
+                closeInlinePopup();
+                $('#saveIndicator').fadeIn().delay(2000).fadeOut();
+            } catch(err) {
+                console.error('Inline save error:', err);
+            }
+            saveBtn.innerHTML = '<i class="fa fa-save me-1"></i> Save';
+            saveBtn.disabled = false;
+        }
+
+        // Close popup on Escape key
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') closeInlinePopup();
+        });
+
+        // Re-inject WYSIWYG after iframe reloads
+        document.getElementById('sitePreview').addEventListener('load', () => {
+            previewLoaded();
+            if (wysiwygActive) setTimeout(injectWysiwygIntoFrame, 300);
+        });
+        const PAGE_URLS = {
+            home: '/index.html', about: '/about.html', thematic: '/thematic.html',
+            work: '/work.html', partners: '/partners.html', gallery: '/gallery.html',
+            publications: '/publications.html', contact: '/contact.html',
+            global: '/index.html', audit: null,
+            'manage-partners': null, 'manage-team': null, 'manage-testimonials': null, 'manage-whyus-stats': null, 'manage-gallery': null
+        };
+
+        function loadPreview(pageKey) {
+            const url = PAGE_URLS[pageKey];
+            const frame = document.getElementById('sitePreview');
+            const urlBar = document.getElementById('previewUrl');
+            const loading = document.getElementById('previewLoading');
+            const panel = document.querySelector('.preview-panel');
+
+            if (!url) {
+                panel.style.display = 'none';
+                return;
+            }
+            panel.style.display = 'flex';
+            loading.classList.remove('hidden');
+            urlBar.textContent = url;
+            frame.src = url;
+        }
+
+        function previewLoaded() {
+            document.getElementById('previewLoading').classList.add('hidden');
+        }
+
+        function refreshPreview() {
+            const frame = document.getElementById('sitePreview');
+            const loading = document.getElementById('previewLoading');
+            loading.classList.remove('hidden');
+            frame.src = frame.src;
+        }
+
+        function setPreviewDevice(device) {
+            const wrap = document.querySelector('.preview-frame-wrap');
+            wrap.className = 'preview-frame-wrap ' + (device === 'desktop' ? '' : device);
+            document.querySelectorAll('.btn-device').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.device === device);
+            });
+        }
+
+        // ── TOGGLE SIDEBAR ──
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const btn = document.getElementById('toggleSidebar');
+            sidebar.classList.toggle('collapsed');
+            btn.classList.toggle('active');
+            
+            // Update button icon
+            if (sidebar.classList.contains('collapsed')) {
+                btn.innerHTML = '<i class="fa fa-bars"></i>';
+                btn.title = 'Show Sidebar';
+            } else {
+                btn.innerHTML = '<i class="fa fa-times"></i>';
+                btn.title = 'Hide Sidebar';
+            }
+        }
+
+        // ── TOGGLE EDITOR PANEL ──
+        function toggleEditor() {
+            const editor = document.querySelector('.main-content');
+            const btn = document.getElementById('toggleEditor');
+            editor.classList.toggle('collapsed');
+            btn.classList.toggle('active');
+            
+            // Update button icon
+            if (editor.classList.contains('collapsed')) {
+                btn.innerHTML = '<i class="fa fa-edit"></i>';
+                btn.title = 'Show Editor';
+            } else {
+                btn.innerHTML = '<i class="fa fa-times"></i>';
+                btn.title = 'Hide Editor';
+            }
+        }
+
+        // ── TOGGLE CARD BODY (COLLAPSE SECTIONS) ──
+        function toggleCardBody(header) {
+            const cardBody = header.nextElementSibling;
+            header.classList.toggle('collapsed');
+            cardBody.classList.toggle('collapsed');
+        }
+        
+        // Check if logged in with a small delay to allow localStorage to be accessible
+        setTimeout(() => {
+            try {
+                if (localStorage.getItem("adminLoggedIn") !== "true") {
+                    window.location.href = "login.html";
+                }
+            } catch (e) {
+                console.log('localStorage not accessible:', e);
+                // Don't redirect immediately, give it another chance
+                setTimeout(() => {
+                    try {
+                        if (localStorage.getItem("adminLoggedIn") !== "true") {
+                            window.location.href = "login.html";
+                        }
+                    } catch (e2) {
+                        console.error('localStorage still not accessible');
+                    }
+                }, 500);
+            }
+        }, 100);
+
+        const CMS_CONFIG = {
+            home: {
+                title: "Home Page Content",
+                page_path: "index.html",
+                sections: [
+                    {
+                        name: "First Slideshow Banner (Top of Homepage)",
+                        fields: [
+                            { id: "home-hero-bg-1", label: "Background Photo", type: "text", placeholder: "https://images.unsplash.com/photo-1509099836639-18ba1795216d?w=1600", help: "The large photo behind the text" },
+                            { id: "home-hero-title-1", label: "Main Headline", type: "text", placeholder: "Sustainable Quality Education for All", help: "Big text visitors see first" },
+                            { id: "home-hero-desc-1", label: "Description Text", type: "textarea", placeholder: "FENU is Uganda's national coalition of over 100 civil society organizations united to improve education for every child.", help: "Smaller text below the headline" },
+                            { id: "home-hero-btn1-1", label: "First Button Text", type: "text", placeholder: "Our Mission", help: "Text on the orange button" },
+                            { id: "home-hero-btn2-1", label: "Second Button Text", type: "text", placeholder: "Our Work", help: "Text on the second button" }
+                        ]
+                    },
+                    {
+                        name: "Second Slideshow Banner",
+                        fields: [
+                            { id: "home-hero-bg-2", label: "Background Photo", type: "text", placeholder: "https://images.unsplash.com/photo-1497486751825-1233686d5d80?w=1600" },
+                            { id: "home-hero-title-2", label: "Main Headline", type: "text", placeholder: "Advocating for Every Learner in Uganda" },
+                            { id: "home-hero-desc-2", label: "Description Text", type: "textarea", placeholder: "We influence government policy, run national campaigns, and champion the right to education for all - especially the most marginalized." },
+                            { id: "home-hero-btn1-2", label: "First Button Text", type: "text", placeholder: "Thematic Areas" },
+                            { id: "home-hero-btn2-2", label: "Second Button Text", type: "text", placeholder: "Our Projects" }
+                        ]
+                    },
+                    {
+                        name: "Third Slideshow Banner",
+                        fields: [
+                            { id: "home-hero-bg-3", label: "Background Photo", type: "text", placeholder: "https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=1600" },
+                            { id: "home-hero-title-3", label: "Main Headline", type: "text", placeholder: "Together, We Change the Education Landscape" },
+                            { id: "home-hero-desc-3", label: "Description Text", type: "textarea", placeholder: "Founded in 2001, FENU brings together NGOs, CBOs, and education stakeholders to drive lasting policy change across Uganda." },
+                            { id: "home-hero-btn1-3", label: "First Button Text", type: "text", placeholder: "About FENU" },
+                            { id: "home-hero-btn2-3", label: "Second Button Text", type: "text", placeholder: "Our Partners" }
+                        ]
+                    },
+                    {
+                        name: "Statistics Numbers (Blue Bar Below Slideshow)",
+                        fields: [
+                            { id: "home-stat-team", label: "Team Members Number", type: "text", placeholder: "20", help: "Shows '20+ Team Members'" },
+                            { id: "home-stat-groups", label: "Thematic Groups Number", type: "text", placeholder: "6", help: "Shows '6 Thematic Working Groups'" },
+                            { id: "home-stat-partners", label: "Partners Number", type: "text", placeholder: "10", help: "Shows '10+ Partners'" }
+                        ]
+                    },
+                    {
+                        name: "Content Slider - Card 1 (About FENU)",
+                        fields: [
+                            { id: "home-slider-title-1", label: "Card Title", type: "text", placeholder: "About FENU" },
+                            { id: "home-slider-desc-1", label: "Card Description", type: "textarea", placeholder: "Learn about FENU's history, mission, values, and long-term education transformation strategy." },
+                            { id: "home-slider-btn-1", label: "Button Text", type: "text", placeholder: "View About Page" }
+                        ]
+                    },
+                    {
+                        name: "Content Slider - Card 2 (Thematic)",
+                        fields: [
+                            { id: "home-slider-title-2", label: "Card Title", type: "text", placeholder: "Thematic Working Groups" },
+                            { id: "home-slider-desc-2", label: "Card Description", type: "textarea", placeholder: "Discover six focus areas driving advocacy, research, and policy engagement across Uganda." },
+                            { id: "home-slider-btn-2", label: "Button Text", type: "text", placeholder: "View Thematic Areas" }
+                        ]
+                    },
+                    {
+                        name: "Content Slider - Card 3 (How We Work)",
+                        fields: [
+                            { id: "home-slider-title-3", label: "Card Title", type: "text", placeholder: "How We Work" },
+                            { id: "home-slider-desc-3", label: "Card Description", type: "textarea", placeholder: "See the coalition's methods: campaigns, media, government lobbying, and accountability work." },
+                            { id: "home-slider-btn-3", label: "Button Text", type: "text", placeholder: "View Work Page" }
+                        ]
+                    },
+                    {
+                        name: "Content Slider - Card 4 (Partners)",
+                        fields: [
+                            { id: "home-slider-title-4", label: "Card Title", type: "text", placeholder: "Partners & Networks" },
+                            { id: "home-slider-desc-4", label: "Card Description", type: "textarea", placeholder: "Meet the national and international partners strengthening FENU's impact across the region." },
+                            { id: "home-slider-btn-4", label: "Button Text", type: "text", placeholder: "View Partners" }
+                        ]
+                    },
+                    {
+                        name: "Content Slider - Card 5 (Contact)",
+                        fields: [
+                            { id: "home-slider-title-5", label: "Card Title", type: "text", placeholder: "Contact Information" },
+                            { id: "home-slider-desc-5", label: "Card Description", type: "textarea", placeholder: "Find office location, communication channels, office hours, and official social media pages." },
+                            { id: "home-slider-btn-5", label: "Button Text", type: "text", placeholder: "View Contact Page" }
+                        ]
+                    },
+                    {
+                        name: "About FENU Section (Middle of Page)",
+                        fields: [
+                            { id: "home-about-title", label: "Section Headline", type: "text", placeholder: "Uganda's Voice for Quality Education Since 2001" },
+                            { id: "home-about-desc", label: "Description Paragraph", type: "textarea", placeholder: "The Forum for Education NGOs in Uganda (FENU) is a national coalition of civil society organizations collectively standing up for the right to education for all children in Uganda. Founded in 2001, FENU coordinates over 100 NGOs, CBOs, and education institutions in joint advocacy, policy engagement, and campaigns for change." }
+                        ]
+                    },
+                    {
+                        name: "Why Us Section - Title & Description",
+                        fields: [
+                            { id: "home-whyus-title", label: "Section Title", type: "text", placeholder: "Few Reasons Why People Choosing Us!", help: "Title above the colored boxes" },
+                            { id: "home-whyus-desc", label: "Description", type: "textarea", placeholder: "We believe in creating opportunities and empowering communities through education, healthcare, and sustainable development. Your support helps us bring smiles, hope, and a brighter future to those in need." },
+                            { id: "home-whyus-point1", label: "Bullet Point 1", type: "text", placeholder: "Justo magna erat amet" },
+                            { id: "home-whyus-point2", label: "Bullet Point 2", type: "text", placeholder: "Aliqu diam amet diam et eos" },
+                            { id: "home-whyus-point3", label: "Bullet Point 3", type: "text", placeholder: "Clita erat ipsum et lorem et sit" }
+                        ]
+                    },
+                    {
+                        name: "Donate Section",
+                        fields: [
+                            { id: "home-donate-title", label: "Main Title", type: "text", placeholder: "Let's Donate to Needy People for Better Lives" },
+                            { id: "home-donate-desc", label: "Description", type: "textarea", placeholder: "Through your donations, we spread kindness and support to children, families, and communities struggling to find stability." },
+                            { id: "home-donate-box-title", label: "Right Box Title", type: "text", placeholder: "Support Education in Uganda" },
+                            { id: "home-donate-box-desc", label: "Right Box Description", type: "textarea", placeholder: "FENU Uganda connects NGOs to strengthen learning outcomes, policy advocacy, and equitable access to quality education." }
+                        ]
+                    },
+                    {
+                        name: "Testimonials Section - Title",
+                        fields: [
+                            { id: "home-testimonial-title", label: "Section Title", type: "text", placeholder: "What People Say About Our Activities." },
+                            { id: "home-testimonial-subtitle", label: "Subtitle", type: "text", placeholder: "We work to bring smiles, hope, and a brighter future to those in need." }
+                        ]
+                    }
+                ]
+            },
+            about: {
+                title: "About Page Content",
+                page_path: "about.html",
+                sections: [
+                    {
+                        name: "Top Banner (About Page)",
+                        fields: [
+                            { id: "about-hero-title", label: "Page Title", type: "text", placeholder: "About FENU Uganda" },
+                            { id: "about-hero-subtitle", label: "Subtitle", type: "text", placeholder: "A national coalition advancing sustainable quality education for all." }
+                        ]
+                    },
+                    {
+                        name: "Who We Are Section",
+                        fields: [
+                            { id: "about-who-title", label: "Section Heading", type: "text", placeholder: "A National Coalition for Education Justice" },
+                            { id: "about-who-desc", label: "Description", type: "textarea", placeholder: "The Forum for Education NGOs in Uganda (FENU) is a national coalition of civil society organizations collectively standing up for the right to education for all children in Uganda..." }
+                        ]
+                    },
+                    {
+                        name: "Our History Section (Orange Background)",
+                        fields: [
+                            { id: "about-history-title", label: "Section Heading", type: "text", placeholder: "Founded in March 2001" },
+                            { id: "about-history-desc", label: "History Text (First Paragraph)", type: "textarea", placeholder: "FENU was founded in March 2001 to unify education-focused civil society organizations under one collaborative platform to influence policy and improve education outcomes nationwide." },
+                            { id: "about-history-para2", label: "History Text (Second Paragraph)", type: "textarea", placeholder: "In its early years, the coalition's advocacy aligned with the Millennium Development Goals (MDGs)..." },
+                            { id: "about-history-para3", label: "History Text (Third Paragraph)", type: "textarea", placeholder: "As global and national priorities evolved, FENU deepened its work under the Sustainable Development Goals (SDGs)..." }
+                        ]
+                    },
+                    {
+                        name: "Mission Statement",
+                        fields: [
+                            { id: "about-mission", label: "Mission Text", type: "textarea", placeholder: "To improve quality, access, equity and sustainability of education for all in Uganda" }
+                        ]
+                    },
+                    {
+                        name: "Vision Statement",
+                        fields: [
+                            { id: "about-vision", label: "Vision Text", type: "textarea", placeholder: "A Uganda where injustices in education policy and delivery have been overcome" }
+                        ]
+                    },
+                    {
+                        name: "Our Values Section - Title",
+                        fields: [
+                            { id: "about-values-title", label: "Section Title", type: "text", placeholder: "Guiding Principles of Our Coalition" }
+                        ]
+                    },
+                    {
+                        name: "Theory of Change Section",
+                        fields: [
+                            { id: "about-toc-title", label: "Section Title", type: "text", placeholder: "How FENU Drives System-Level Change" },
+                            { id: "about-toc-desc", label: "Description", type: "textarea", placeholder: "FENU works at multiple levels to transform education systems from grassroots action to national policy influence." }
+                        ]
+                    }
+                ]
+            },
+            thematic: {
+                title: "Thematic Page Content",
+                page_path: "thematic.html",
+                sections: [
+                    {
+                        name: "Top Banner (Thematic Page)",
+                        fields: [
+                            { id: "thematic-hero-title", label: "Page Title", type: "text", placeholder: "Thematic Working Groups" }
+                        ]
+                    },
+                    {
+                        name: "Introduction Paragraph",
+                        fields: [
+                            { id: "thematic-intro", label: "Introduction Text", type: "textarea", placeholder: "FENU operates through six thematic working groups that focus on key education priorities..." }
+                        ]
+                    },
+                    {
+                        name: "Card 1 - Early Childhood Education",
+                        fields: [
+                            { id: "thematic-card-img-1", label: "Card Image URL", type: "text", placeholder: "https://images.unsplash.com/photo-1567057419565-4349c49d8a04?w=600" },
+                            { id: "thematic-card-title-1", label: "Card Title", type: "text", placeholder: "Early Childhood Education" },
+                            { id: "thematic-card-desc-1", label: "Card Description", type: "textarea", placeholder: "Advocates for accessible, quality early learning environments for all Ugandan children from birth to age 8, focusing on school readiness and foundational skills." }
+                        ]
+                    },
+                    {
+                        name: "Card 2 - Adult Literacy",
+                        fields: [
+                            { id: "thematic-card-img-2", label: "Card Image URL", type: "text", placeholder: "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=600" },
+                            { id: "thematic-card-title-2", label: "Card Title", type: "text", placeholder: "Adult Literacy" },
+                            { id: "thematic-card-desc-2", label: "Card Description", type: "textarea", placeholder: "Promotes lifelong learning opportunities for adults, particularly in rural and underserved communities, ensuring literacy is recognized as a basic human right." }
+                        ]
+                    },
+                    {
+                        name: "Card 3 - Gender & Girls' Education",
+                        fields: [
+                            { id: "thematic-card-img-3", label: "Card Image URL", type: "text", placeholder: "https://images.unsplash.com/photo-1509062522246-3755977927d7?w=600" },
+                            { id: "thematic-card-title-3", label: "Card Title", type: "text", placeholder: "Gender & Girls' Education" },
+                            { id: "thematic-card-desc-3", label: "Card Description", type: "textarea", placeholder: "Campaigns for 100% education completion rates for girls, tackling barriers at puberty, improving parental attitudes, and ending exploitation and abuse within the education system." }
+                        ]
+                    },
+                    {
+                        name: "Card 4 - Access & Quality",
+                        fields: [
+                            { id: "thematic-card-img-4", label: "Card Image URL", type: "text", placeholder: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=600" },
+                            { id: "thematic-card-title-4", label: "Card Title", type: "text", placeholder: "Access & Quality" },
+                            { id: "thematic-card-desc-4", label: "Card Description", type: "textarea", placeholder: "Works to ensure every child in Uganda can access a school that delivers genuinely high-quality education, regardless of location, background, or ability." }
+                        ]
+                    },
+                    {
+                        name: "Card 5 - Emergency in Education",
+                        fields: [
+                            { id: "thematic-card-img-5", label: "Card Image URL", type: "text", placeholder: "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=600" },
+                            { id: "thematic-card-title-5", label: "Card Title", type: "text", placeholder: "Emergency in Education" },
+                            { id: "thematic-card-desc-5", label: "Card Description", type: "textarea", placeholder: "Ensures education continues during crises - including displacement, conflict, and natural disasters - protecting the learning rights of the most vulnerable children." }
+                        ]
+                    },
+                    {
+                        name: "Card 6 - Accountability in Education",
+                        fields: [
+                            { id: "thematic-card-img-6", label: "Card Image URL", type: "text", placeholder: "https://images.unsplash.com/photo-1521791136064-7986c2920216?w=600" },
+                            { id: "thematic-card-title-6", label: "Card Title", type: "text", placeholder: "Accountability in Education" },
+                            { id: "thematic-card-desc-6", label: "Card Description", type: "textarea", placeholder: "Holds government, schools, and stakeholders accountable for education commitments, promoting transparency in resource allocation and policy delivery." }
+                        ]
+                    }
+                ]
+            },
+            work: {
+                title: "Work Page Content",
+                page_path: "work.html",
+                sections: [
+                    {
+                        name: "Top Banner (Work Page)",
+                        fields: [
+                            { id: "work-hero-title", label: "Page Title", type: "text", placeholder: "How We Work" }
+                        ]
+                    },
+                    {
+                        name: "Introduction Paragraph",
+                        fields: [
+                            { id: "work-intro", label: "Introduction Text", type: "textarea", placeholder: "FENU uses advocacy, research, and community engagement to drive education policy change..." }
+                        ]
+                    },
+                    {
+                        name: "Card 1 - Government Lobbying",
+                        fields: [
+                            { id: "work-card-title-1", label: "Card Title", type: "text", placeholder: "Government Lobbying" },
+                            { id: "work-card-desc-1", label: "Card Description", type: "textarea", placeholder: "FENU engages directly with Uganda's Ministry of Education and Sports and line ministries, participating in policy reviews and acting as the civil society voice-channel." }
+                        ]
+                    },
+                    {
+                        name: "Card 2 - National Campaigns",
+                        fields: [
+                            { id: "work-card-title-2", label: "Card Title", type: "text", placeholder: "National Campaigns" },
+                            { id: "work-card-desc-2", label: "Card Description", type: "textarea", placeholder: "FENU runs targeted public campaigns on education issues to raise awareness, shift attitudes, and pressure decision-makers for systemic change." }
+                        ]
+                    },
+                    {
+                        name: "Card 3 - Media Engagement",
+                        fields: [
+                            { id: "work-card-title-3", label: "Card Title", type: "text", placeholder: "Media Engagement" },
+                            { id: "work-card-desc-3", label: "Card Description", type: "textarea", placeholder: "Working with the press to amplify education stories, FENU ensures that education issues remain visible in national public discourse." }
+                        ]
+                    },
+                    {
+                        name: "Card 4 - Information Sharing",
+                        fields: [
+                            { id: "work-card-title-4", label: "Card Title", type: "text", placeholder: "Information Sharing" },
+                            { id: "work-card-desc-4", label: "Card Description", type: "textarea", placeholder: "FENU connects its 100+ member organizations, sharing policy updates, research, best practices, and resources across the network." }
+                        ]
+                    },
+                    {
+                        name: "Card 5 - Accountability",
+                        fields: [
+                            { id: "work-card-title-5", label: "Card Title", type: "text", placeholder: "Accountability" },
+                            { id: "work-card-desc-5", label: "Card Description", type: "textarea", placeholder: "FENU holds those in power accountable - tracking government commitments on education and publishing findings to citizens and stakeholders." }
+                        ]
+                    },
+                    {
+                        name: "Card 6 - Events & Conferences",
+                        fields: [
+                            { id: "work-card-title-6", label: "Card Title", type: "text", placeholder: "Events & Conferences" },
+                            { id: "work-card-desc-6", label: "Card Description", type: "textarea", placeholder: "From district-level education forums to national conferences and parliamentary workshops, FENU convenes key stakeholders for action." }
+                        ]
+                    },
+                    {
+                        name: "Bottom Banner Quote",
+                        fields: [
+                            { id: "work-bottom-quote", label: "Quote Text", type: "textarea", placeholder: "Working across all regions of Uganda - from national policy halls in Kampala to community schools in the most remote districts." }
+                        ]
+                    }
+                ]
+            },
+            partners: {
+                title: "Partners Page Content",
+                page_path: "partners.html",
+                sections: [
+                    {
+                        name: "Top Banner (Partners Page)",
+                        fields: [
+                            { id: "partners-hero-title", label: "Page Title", type: "text", placeholder: "Our Partners" }
+                        ]
+                    },
+                    {
+                        name: "Introduction Paragraph",
+                        fields: [
+                            { id: "partners-intro", label: "Introduction Text", type: "textarea", placeholder: "FENU collaborates with national and international organizations to strengthen education in Uganda..." }
+                        ]
+                    },
+                    {
+                        name: "Become a Member Section",
+                        fields: [
+                            { id: "partners-member-title", label: "Section Title", type: "text", placeholder: "Become a Member" },
+                            { id: "partners-member-desc", label: "Description", type: "textarea", placeholder: "FENU welcomes new member organizations. To learn about joining, contact us at the details on our Contact page." },
+                            { id: "partners-member-btn", label: "Button Text", type: "text", placeholder: "Go to Contact Page" }
+                        ]
+                    }
+                ]
+            },
+            gallery: {
+                title: "Gallery Page Content",
+                page_path: "gallery.html",
+                sections: [
+                    {
+                        name: "Top Banner (Gallery Page)",
+                        fields: [
+                            { id: "gallery-hero-title", label: "Page Title", type: "text", placeholder: "Photo Gallery" },
+                            { id: "gallery-hero-subtitle", label: "Subtitle", type: "text", placeholder: "Moments from Our Work" }
+                        ]
+                    },
+                    {
+                        name: "Photos Section",
+                        fields: [
+                            { id: "gallery-photos-label", label: "Section Label", type: "text", placeholder: "Photos" },
+                            { id: "gallery-photos-title", label: "Section Title", type: "text", placeholder: "Capturing Our Impact" },
+                            { id: "gallery-photos-desc", label: "Section Description", type: "textarea", placeholder: "Explore images from our advocacy campaigns, workshops, and community engagement activities." }
+                        ]
+                    },
+                    {
+                        name: "Videos Section",
+                        fields: [
+                            { id: "gallery-videos-label", label: "Section Label", type: "text", placeholder: "Videos" },
+                            { id: "gallery-videos-title", label: "Section Title", type: "text", placeholder: "Our Stories in Motion" },
+                            { id: "gallery-videos-desc", label: "Section Description", type: "textarea", placeholder: "Watch videos documenting our advocacy work, community impact, and educational initiatives." }
+                        ]
+                    }
+                ]
+            },
+            publications: {
+                title: "Publications Page Content",
+                page_path: "publications.html",
+                sections: [
+                    {
+                        name: "Top Banner (Publications Page)",
+                        fields: [
+                            { id: "publications-hero-title", label: "Page Title", type: "text", placeholder: "Publications & Resources" },
+                            { id: "publications-hero-subtitle", label: "Subtitle", type: "text", placeholder: "Research, Reports & Policy Briefs" }
+                        ]
+                    },
+                    {
+                        name: "Latest News Section",
+                        fields: [
+                            { id: "publications-news-label", label: "Section Label", type: "text", placeholder: "Latest News" },
+                            { id: "publications-news-title", label: "Section Title", type: "text", placeholder: "Stay Informed" },
+                            { id: "publications-news-desc", label: "Section Description", type: "textarea", placeholder: "Read our latest news articles and updates on education policy and advocacy in Uganda." }
+                        ]
+                    },
+                    {
+                        name: "Reports & Publications Section",
+                        fields: [
+                            { id: "publications-reports-label", label: "Section Label", type: "text", placeholder: "Reports & Publications" },
+                            { id: "publications-reports-title", label: "Section Title", type: "text", placeholder: "Our Research & Analysis" },
+                            { id: "publications-reports-desc", label: "Section Description", type: "textarea", placeholder: "Download our reports, policy briefs, and research publications on education in Uganda." }
+                        ]
+                    }
+                ]
+            },
+            contact: {
+                title: "Contact Page Content",
+                page_path: "contact.html",
+                sections: [
+                    {
+                        name: "Top Banner (Contact Page)",
+                        fields: [
+                            { id: "contact-hero-title", label: "Page Title", type: "text", placeholder: "Contact Us" }
+                        ]
+                    },
+                    {
+                        name: "Office Location",
+                        fields: [
+                            { id: "contact-office", label: "Physical Address", type: "textarea", placeholder: "FENU Secretariat, Kampala, Uganda" }
+                        ]
+                    },
+                    {
+                        name: "Email Contacts",
+                        fields: [
+                            { id: "contact-email-1", label: "Main Email", type: "text", placeholder: "kayondroger@yahoo.com" },
+                            { id: "contact-email-2", label: "Alternative Email", type: "text", placeholder: "info@fenu.or.ug" }
+                        ]
+                    },
+                    {
+                        name: "Website Address",
+                        fields: [
+                            { id: "contact-website", label: "Website URL", type: "text", placeholder: "fenu.or.ug" }
+                        ]
+                    },
+                    {
+                        name: "Office Hours",
+                        fields: [
+                            { id: "contact-hours-title", label: "Section Title", type: "text", placeholder: "Office Hours" },
+                            { id: "contact-hours-weekday", label: "Monday-Friday Hours", type: "text", placeholder: "Monday-Friday: 8:00am - 5:00pm" },
+                            { id: "contact-hours-saturday", label: "Saturday Hours", type: "text", placeholder: "Saturday: By appointment" },
+                            { id: "contact-hours-sunday", label: "Sunday Hours", type: "text", placeholder: "Sunday: Closed" }
+                        ]
+                    }
+                ]
+            },
+            audit: {
+                title: "Audit Log - Change History",
+                page_path: "audit",
+                sections: []
+            },
+            global: {
+                title: "Global Settings (Appears on All Pages)",
+                page_path: "global",
+                sections: [
+                    {
+                        name: "Top Bar Contact Info (Shows at Very Top)",
+                        fields: [
+                            { id: "global-phone", label: "Phone Number", type: "text", placeholder: "+012 345 6789", help: "Shown in top bar 'Call Us'" },
+                            { id: "global-email", label: "Email Address", type: "text", placeholder: "info@domain.com", help: "Shown in top bar 'Mail Us'" },
+                            { id: "global-address", label: "Physical Address", type: "text", placeholder: "123 Street, NY, USA", help: "Shown in top bar 'Address'" }
+                        ]
+                    },
+                    {
+                        name: "Footer Contact (Bottom of Every Page)",
+                        fields: [
+                            { id: "footer-office", label: "Office Name", type: "text", placeholder: "FENU Secretariat" },
+                            { id: "footer-location", label: "Location", type: "text", placeholder: "Kampala, Uganda" },
+                            { id: "footer-email", label: "Email", type: "text", placeholder: "kayondroger@yahoo.com" },
+                            { id: "footer-website", label: "Website", type: "text", placeholder: "fenu.or.ug" }
+                        ]
+                    },
+                    {
+                        name: "Social Media Links (Footer)",
+                        fields: [
+                            { id: "social-linkedin", label: "LinkedIn Link", type: "text", placeholder: "https://www.linkedin.com/company/forum-for-education-ngos-in-uganda-fenu/?viewAsMember=true" }
+                        ]
+                    }
+                ]
+            }
+        };
+
+        const SECTION_ICONS = {
+            'hero': 'fa-image', 'slide': 'fa-film', 'stat': 'fa-chart-bar',
+            'about': 'fa-info-circle', 'mission': 'fa-bullseye', 'vision': 'fa-eye',
+            'history': 'fa-clock', 'intro': 'fa-align-left', 'office': 'fa-building',
+            'email': 'fa-envelope', 'website': 'fa-globe', 'social': 'fa-share-alt',
+            'footer': 'fa-shoe-prints', 'topbar': 'fa-bars', 'contact': 'fa-phone',
+            'who': 'fa-users'
+        };
+
+        function getSectionIcon(name) {
+            const lower = name.toLowerCase();
+            for (const [key, icon] of Object.entries(SECTION_ICONS)) {
+                if (lower.includes(key)) return icon;
+            }
+            return 'fa-pen';
+        }
+
+        function isImageField(label) {
+            return /image|photo|logo|bg|background|url/i.test(label);
+        }
+
+        function renderEditor(pageKey) {
+            const config = CMS_CONFIG[pageKey];
+            
+            // Handle collection management pages
+            if (pageKey === 'manage-partners') { renderPartnersManager(); return; }
+            if (pageKey === 'manage-team') { renderTeamManager(); return; }
+            if (pageKey === 'manage-testimonials') { renderTestimonialsManager(); return; }
+            if (pageKey === 'manage-whyus-stats') { renderWhyUsStatsManager(); return; }
+            if (pageKey === 'manage-gallery') { renderGalleryManager(); return; }
+            
+            if (!config) {
+                $("#pageEditor").html('<div class="card p-5"><h5>Content for this page is coming soon.</h5></div>');
+                return;
+            }
+            if (pageKey === 'audit') { renderAuditLog(); return; }
+
+            let html = `
+                <div class="page-title-bar">
+                    <h2><i class="fa fa-edit me-2" style="color:var(--fenu-orange)"></i>${config.title}</h2>
+                    <span class="page-badge">${config.page_path}</span>
+                </div>
+                <div class="help-banner">
+                    <i class="fa fa-lightbulb"></i>
+                    <strong>How to use:</strong> Type in any field below and watch the preview update instantly on the right. Click <strong>Save Section</strong> to make changes permanent on the website.
+                </div>
+            `;
+
+            config.sections.forEach((section) => {
+                const icon = getSectionIcon(section.name);
+                html += `
+                    <div class="card">
+                        <div class="card-header" onclick="toggleCardBody(this)">
+                            <div class="section-icon"><i class="fa ${icon}"></i></div>
+                            ${section.name}
+                            <i class="fa fa-chevron-down collapse-icon"></i>
+                        </div>
+                        <div class="card-body">
+                            <form class="cms-form" data-page="${config.page_path}">
+                                ${section.fields.map(field => {
+                                    const isImg = isImageField(field.label);
+                                    const fIcon = isImg ? 'fa-image' : (field.type === 'textarea' ? 'fa-align-left' : 'fa-font');
+                                    const placeholder = field.placeholder || `Enter ${field.label.toLowerCase()}...`;
+                                    const helpText = field.help ? `<small style="color:#888;font-size:0.75rem;display:block;margin-top:3px"><i class="fa fa-info-circle me-1"></i>${field.help}</small>` : '';
+                                    return `
+                                    <div class="field-group">
+                                        <label class="field-label"><i class="fa ${fIcon}"></i>${field.label}</label>
+                                        ${field.type === 'textarea'
+                                            ? `<textarea class="form-control live-preview-input" data-cms-id="${field.id}" rows="3" placeholder="${placeholder}"></textarea>`
+                                            : `<input type="text" class="form-control live-preview-input" data-cms-id="${field.id}" placeholder="${placeholder}" ${isImg ? 'data-img-preview="true"' : ''}>`
+                                        }
+                                        ${helpText}
+                                        ${isImg ? `<div class="img-preview-wrap" id="prev-${field.id}"><img src="" alt="preview" onerror="this.parentElement.style.display='none'"></div>` : ''}
+                                    </div>`;
+                                }).join('')}
+                                <div class="form-save-footer">
+                                    <span class="save-hint"><i class="fa fa-info-circle me-1"></i>Changes apply live on save</span>
+                                    <button type="submit" class="btn-fenu"><i class="fa fa-save"></i> Save Section</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                `;
+            });
+
+            $("#pageEditor").html(html);
+            loadCurrentContent(config.page_path);
+        }
+
+        let allAuditLogs = [];
+
+        // ── PARTNERS MANAGER ──
+        async function renderPartnersManager() {
+            const html = `
+                <div class="page-title-bar">
+                    <h2><i class="fa fa-handshake me-2" style="color:var(--fenu-orange)"></i>Manage Partners</h2>
+                    <button class="btn-add" onclick="addNewPartner()"><i class="fa fa-plus me-1"></i> Add Partner</button>
+                </div>
+                <div class="help-banner">
+                    <i class="fa fa-lightbulb"></i>
+                    <strong>Partners:</strong> Add, edit, or remove partner organizations. These appear on the Partners page and homepage.
+                </div>
+                <div id="partnersListWrap"></div>
+            `;
+            $('#pageEditor').html(html);
+            loadPartnersList();
+        }
+
+        async function loadPartnersList() {
+            try {
+                const res = await fetch('/api/cms/collections?key=partners');
+                const partners = await res.json();
+                let html = '';
+                partners.forEach(p => {
+                    html += `
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col-auto">
+                                        <img src="${p.image_url || 'https://via.placeholder.com/80'}" style="width:80px;height:80px;object-fit:contain;border-radius:8px;border:1px solid #eee">
+                                    </div>
+                                    <div class="col">
+                                        <h5 class="mb-1">${p.title}</h5>
+                                        <p class="mb-0 text-muted" style="font-size:0.85rem">${p.description || 'No description'}</p>
+                                    </div>
+                                    <div class="col-auto">
+                                        <button class="btn-add btn-sm me-2" onclick="editPartner(${p.id})"><i class="fa fa-edit"></i></button>
+                                        <button class="btn-delete btn-sm" onclick="deletePartner(${p.id})"><i class="fa fa-trash"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                $('#partnersListWrap').html(html || '<div class="card p-4 text-center text-muted">No partners yet. Click "Add Partner" to create one.</div>');
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        function addNewPartner() {
+            const html = `
+                <div class="card">
+                    <div class="card-header"><div class="section-icon"><i class="fa fa-plus"></i></div>Add New Partner</div>
+                    <div class="card-body">
+                        <div class="field-group">
+                            <label class="field-label"><i class="fa fa-font"></i>Partner Name</label>
+                            <input type="text" class="form-control" id="partnerTitle" placeholder="e.g., UNICEF">
+                        </div>
+                        <div class="field-group">
+                            <label class="field-label"><i class="fa fa-align-left"></i>Description</label>
+                            <textarea class="form-control" id="partnerDesc" rows="2" placeholder="Brief description of partnership"></textarea>
+                        </div>
+                        <div class="field-group">
+                            <label class="field-label"><i class="fa fa-image"></i>Logo URL</label>
+                            <input type="text" class="form-control" id="partnerImage" placeholder="https://example.com/logo.png">
+                        </div>
+                        <div class="form-save-footer">
+                            <button class="btn btn-secondary" onclick="loadPartnersList()">Cancel</button>
+                            <button class="btn-fenu" onclick="savePartner()"><i class="fa fa-save"></i> Save Partner</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            $('#partnersListWrap').prepend(html);
+        }
+
+        async function savePartner(id = null) {
+            const data = {
+                collection_key: 'partners',
+                title: $('#partnerTitle').val(),
+                description: $('#partnerDesc').val(),
+                image_url: $('#partnerImage').val(),
+                is_active: 1
+            };
+            try {
+                if (id) {
+                    await fetch(`/api/cms/collections/${id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
+                } else {
+                    await fetch('/api/cms/collections', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
+                }
+                $('#saveIndicator').fadeIn().delay(2000).fadeOut();
+                loadPartnersList();
+            } catch(e) {
+                alert('Error saving partner');
+            }
+        }
+
+        async function deletePartner(id) {
+            if (!confirm('Delete this partner?')) return;
+            try {
+                await fetch(`/api/cms/collections/${id}`, { method: 'DELETE' });
+                $('#saveIndicator').fadeIn().delay(2000).fadeOut();
+                loadPartnersList();
+            } catch(e) {
+                alert('Error deleting partner');
+            }
+        }
+
+        // ── TEAM MANAGER ──
+        async function renderTeamManager() {
+            const html = `
+                <div class="page-title-bar">
+                    <h2><i class="fa fa-users me-2" style="color:var(--fenu-orange)"></i>Manage Team Members</h2>
+                    <button class="btn-add" onclick="addNewTeamMember()"><i class="fa fa-plus me-1"></i> Add Team Member</button>
+                </div>
+                <div class="help-banner">
+                    <i class="fa fa-lightbulb"></i>
+                    <strong>Team:</strong> Manage team members shown on the homepage. Add photos, names, and roles.
+                </div>
+                <div id="teamListWrap"></div>
+            `;
+            $('#pageEditor').html(html);
+            loadTeamList();
+        }
+
+        async function loadTeamList() {
+            try {
+                const res = await fetch('/api/cms/collections?key=team');
+                const team = await res.json();
+                let html = '';
+                team.forEach(t => {
+                    html += `
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col-auto">
+                                        <img src="${t.image_url || 'https://via.placeholder.com/60'}" style="width:60px;height:60px;object-fit:cover;border-radius:50%;border:2px solid var(--fenu-orange)">
+                                    </div>
+                                    <div class="col">
+                                        <h5 class="mb-0">${t.title}</h5>
+                                        <small class="text-muted">${t.description || 'No role specified'}</small>
+                                    </div>
+                                    <div class="col-auto">
+                                        <button class="btn-delete btn-sm" onclick="deleteTeamMember(${t.id})"><i class="fa fa-trash"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                $('#teamListWrap').html(html || '<div class="card p-4 text-center text-muted">No team members yet.</div>');
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        function addNewTeamMember() {
+            const html = `
+                <div class="card">
+                    <div class="card-header"><div class="section-icon"><i class="fa fa-user-plus"></i></div>Add Team Member</div>
+                    <div class="card-body">
+                        <div class="field-group">
+                            <label class="field-label"><i class="fa fa-user"></i>Full Name</label>
+                            <input type="text" class="form-control" id="teamName" placeholder="e.g., John Doe">
+                        </div>
+                        <div class="field-group">
+                            <label class="field-label"><i class="fa fa-briefcase"></i>Role/Position</label>
+                            <input type="text" class="form-control" id="teamRole" placeholder="e.g., Project Manager">
+                        </div>
+                        <div class="field-group">
+                            <label class="field-label"><i class="fa fa-image"></i>Photo URL</label>
+                            <input type="text" class="form-control" id="teamPhoto" placeholder="https://example.com/photo.jpg">
+                        </div>
+                        <div class="form-save-footer">
+                            <button class="btn btn-secondary" onclick="loadTeamList()">Cancel</button>
+                            <button class="btn-fenu" onclick="saveTeamMember()"><i class="fa fa-save"></i> Save</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            $('#teamListWrap').prepend(html);
+        }
+
+        async function saveTeamMember() {
+            const data = {
+                collection_key: 'team',
+                title: $('#teamName').val(),
+                description: $('#teamRole').val(),
+                image_url: $('#teamPhoto').val(),
+                is_active: 1
+            };
+            try {
+                await fetch('/api/cms/collections', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
+                $('#saveIndicator').fadeIn().delay(2000).fadeOut();
+                loadTeamList();
+            } catch(e) {
+                alert('Error saving team member');
+            }
+        }
+
+        async function deleteTeamMember(id) {
+            if (!confirm('Remove this team member?')) return;
+            try {
+                await fetch(`/api/cms/collections/${id}`, { method: 'DELETE' });
+                $('#saveIndicator').fadeIn().delay(2000).fadeOut();
+                loadTeamList();
+            } catch(e) {
+                alert('Error deleting team member');
+            }
+        }
+
+        // ── WHY US STATISTICS MANAGER ──
+        function renderWhyUsStatsManager() {
+            const html = `
+                <div class="page-title-bar">
+                    <h2><i class="fa fa-chart-bar me-2" style="color:var(--fenu-orange)"></i>Why Us Statistics</h2>
+                </div>
+                <div class="help-banner">
+                    <i class="fa fa-lightbulb"></i>
+                    <strong>Why Us Section:</strong> Update the 4 colored boxes shown in the "Why Us" section. You can change both the numbers and the labels.
+                </div>
+                <div class="card">
+                    <div class="card-header"><div class="section-icon"><i class="fa fa-chart-bar"></i></div>Why Us Statistics (4 Colored Boxes)</div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="field-group">
+                                    <label class="field-label"><i class="fa fa-hashtag"></i>Box 1 - Number</label>
+                                    <input type="text" class="form-control" id="whyus-stat-team-number" placeholder="500">
+                                    <small class="text-muted">Orange box, top left</small>
+                                </div>
+                                <div class="field-group">
+                                    <label class="field-label"><i class="fa fa-font"></i>Box 1 - Label</label>
+                                    <input type="text" class="form-control" id="whyus-stat-team-label" placeholder="Team Members">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="field-group">
+                                    <label class="field-label"><i class="fa fa-hashtag"></i>Box 2 - Number</label>
+                                    <input type="text" class="form-control" id="whyus-stat-awards-number" placeholder="70">
+                                    <small class="text-muted">Blue box, top right</small>
+                                </div>
+                                <div class="field-group">
+                                    <label class="field-label"><i class="fa fa-font"></i>Box 2 - Label</label>
+                                    <input type="text" class="form-control" id="whyus-stat-awards-label" placeholder="Award Winning">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="field-group">
+                                    <label class="field-label"><i class="fa fa-hashtag"></i>Box 3 - Number</label>
+                                    <input type="text" class="form-control" id="whyus-stat-projects-number" placeholder="3000">
+                                    <small class="text-muted">Blue box, bottom left</small>
+                                </div>
+                                <div class="field-group">
+                                    <label class="field-label"><i class="fa fa-font"></i>Box 3 - Label</label>
+                                    <input type="text" class="form-control" id="whyus-stat-projects-label" placeholder="Total Projects">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="field-group">
+                                    <label class="field-label"><i class="fa fa-hashtag"></i>Box 4 - Number</label>
+                                    <input type="text" class="form-control" id="whyus-stat-reviews-number" placeholder="7000">
+                                    <small class="text-muted">Orange box, bottom right</small>
+                                </div>
+                                <div class="field-group">
+                                    <label class="field-label"><i class="fa fa-font"></i>Box 4 - Label</label>
+                                    <input type="text" class="form-control" id="whyus-stat-reviews-label" placeholder="Client's Review">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-save-footer">
+                            <span class="save-hint"><i class="fa fa-info-circle me-1"></i>Changes apply immediately</span>
+                            <button class="btn-fenu" onclick="saveWhyUsStats()"><i class="fa fa-save"></i> Save Statistics</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            $('#pageEditor').html(html);
+            loadWhyUsStats();
+        }
+
+        async function loadWhyUsStats() {
+            try {
+                const res = await fetch('/api/cms/sections?page=index.html');
+                const sections = await res.json();
+                sections.forEach(s => {
+                    if (s.section_key === 'whyus-stat-team-number') $('#whyus-stat-team-number').val(s.content_html);
+                    if (s.section_key === 'whyus-stat-team-label') $('#whyus-stat-team-label').val(s.content_html);
+                    if (s.section_key === 'whyus-stat-awards-number') $('#whyus-stat-awards-number').val(s.content_html);
+                    if (s.section_key === 'whyus-stat-awards-label') $('#whyus-stat-awards-label').val(s.content_html);
+                    if (s.section_key === 'whyus-stat-projects-number') $('#whyus-stat-projects-number').val(s.content_html);
+                    if (s.section_key === 'whyus-stat-projects-label') $('#whyus-stat-projects-label').val(s.content_html);
+                    if (s.section_key === 'whyus-stat-reviews-number') $('#whyus-stat-reviews-number').val(s.content_html);
+                    if (s.section_key === 'whyus-stat-reviews-label') $('#whyus-stat-reviews-label').val(s.content_html);
+                });
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        async function saveWhyUsStats() {
+            const stats = [
+                { key: 'whyus-stat-team-number', value: $('#whyus-stat-team-number').val() || '500' },
+                { key: 'whyus-stat-team-label', value: $('#whyus-stat-team-label').val() || 'Team Members' },
+                { key: 'whyus-stat-awards-number', value: $('#whyus-stat-awards-number').val() || '70' },
+                { key: 'whyus-stat-awards-label', value: $('#whyus-stat-awards-label').val() || 'Award Winning' },
+                { key: 'whyus-stat-projects-number', value: $('#whyus-stat-projects-number').val() || '3000' },
+                { key: 'whyus-stat-projects-label', value: $('#whyus-stat-projects-label').val() || 'Total Projects' },
+                { key: 'whyus-stat-reviews-number', value: $('#whyus-stat-reviews-number').val() || '7000' },
+                { key: 'whyus-stat-reviews-label', value: $('#whyus-stat-reviews-label').val() || "Client's Review" }
+            ];
+            for (const stat of stats) {
+                try {
+                    await fetch('/api/cms/sections', {
+                        method: 'POST',
+                        headers: {'Content-Type':'application/json'},
+                        body: JSON.stringify({
+                            page_path: 'index.html',
+                            section_key: stat.key,
+                            selector: `[data-cms-id="${stat.key}"]`,
+                            content_html: stat.value,
+                            is_active: 1
+                        })
+                    });
+                } catch(e) {
+                    console.error(e);
+                }
+            }
+            $('#saveIndicator').fadeIn().delay(2000).fadeOut();
+            socket.emit('cms-update', { page: 'index.html' });
+        }
+
+        // ── TESTIMONIALS MANAGER ──
+        async function renderTestimonialsManager() {
+            const html = `
+                <div class="page-title-bar">
+                    <h2><i class="fa fa-quote-right me-2" style="color:var(--fenu-orange)"></i>Manage Testimonials</h2>
+                    <button class="btn-add" onclick="addNewTestimonial()"><i class="fa fa-plus me-1"></i> Add Testimonial</button>
+                </div>
+                <div class="help-banner">
+                    <i class="fa fa-lightbulb"></i>
+                    <strong>Testimonials:</strong> Manage "What People Say About Us" section. Add client reviews and feedback.
+                </div>
+                <div id="testimonialsListWrap"></div>
+            `;
+            $('#pageEditor').html(html);
+            loadTestimonialsList();
+        }
+
+        async function loadTestimonialsList() {
+            try {
+                const res = await fetch('/api/cms/collections?key=testimonials');
+                const testimonials = await res.json();
+                let html = '';
+                testimonials.forEach(t => {
+                    html += `
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col-auto">
+                                        <img src="${t.image_url || 'https://via.placeholder.com/80'}" style="width:80px;height:80px;object-fit:cover;border-radius:50%;border:2px solid var(--fenu-orange)">
+                                    </div>
+                                    <div class="col">
+                                        <h5 class="mb-1">${t.title}</h5>
+                                        <small class="text-muted">${t.description || 'No role'}</small>
+                                        <p class="mb-0 mt-2" style="font-size:0.85rem">${(t.extra_json || '').substring(0, 100)}...</p>
+                                    </div>
+                                    <div class="col-auto">
+                                        <button class="btn-delete btn-sm" onclick="deleteTestimonial(${t.id})"><i class="fa fa-trash"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                $('#testimonialsListWrap').html(html || '<div class="card p-4 text-center text-muted">No testimonials yet.</div>');
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        function addNewTestimonial() {
+            const html = `
+                <div class="card">
+                    <div class="card-header"><div class="section-icon"><i class="fa fa-quote-right"></i></div>Add Testimonial</div>
+                    <div class="card-body">
+                        <div class="field-group">
+                            <label class="field-label"><i class="fa fa-user"></i>Person Name</label>
+                            <input type="text" class="form-control" id="testimonialName" placeholder="e.g., Alexander Bell">
+                        </div>
+                        <div class="field-group">
+                            <label class="field-label"><i class="fa fa-briefcase"></i>Role/Position</label>
+                            <input type="text" class="form-control" id="testimonialRole" placeholder="e.g., CEO, Founder">
+                        </div>
+                        <div class="field-group">
+                            <label class="field-label"><i class="fa fa-quote-left"></i>Testimonial Quote</label>
+                            <textarea class="form-control" id="testimonialQuote" rows="3" placeholder="What they said about us..."></textarea>
+                        </div>
+                        <div class="field-group">
+                            <label class="field-label"><i class="fa fa-image"></i>Photo URL</label>
+                            <input type="text" class="form-control" id="testimonialPhoto" placeholder="https://example.com/photo.jpg">
+                        </div>
+                        <div class="form-save-footer">
+                            <button class="btn btn-secondary" onclick="loadTestimonialsList()">Cancel</button>
+                            <button class="btn-fenu" onclick="saveTestimonial()"><i class="fa fa-save"></i> Save</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            $('#testimonialsListWrap').prepend(html);
+        }
+
+        async function saveTestimonial() {
+            const data = {
+                collection_key: 'testimonials',
+                title: $('#testimonialName').val(),
+                description: $('#testimonialRole').val(),
+                extra_json: $('#testimonialQuote').val(),
+                image_url: $('#testimonialPhoto').val(),
+                is_active: 1
+            };
+            try {
+                await fetch('/api/cms/collections', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
+                $('#saveIndicator').fadeIn().delay(2000).fadeOut();
+                loadTestimonialsList();
+            } catch(e) {
+                alert('Error saving testimonial');
+            }
+        }
+
+        async function deleteTestimonial(id) {
+            if (!confirm('Delete this testimonial?')) return;
+            try {
+                await fetch(`/api/cms/collections/${id}`, { method: 'DELETE' });
+                $('#saveIndicator').fadeIn().delay(2000).fadeOut();
+                loadTestimonialsList();
+            } catch(e) {
+                alert('Error deleting testimonial');
+            }
+        }
+
+        // ── GALLERY MANAGER ──
+        async function renderGalleryManager() {
+            const html = `
+                <div class="page-title-bar">
+                    <h2><i class="fa fa-images me-2" style="color:var(--fenu-orange)"></i>Manage Gallery</h2>
+                    <button class="btn-add" onclick="addGalleryImage()"><i class="fa fa-plus me-1"></i> Add Image</button>
+                </div>
+                <div class="help-banner">
+                    <i class="fa fa-lightbulb"></i>
+                    <strong>Gallery:</strong> Add or remove photos shown in the gallery page.
+                </div>
+                <div id="galleryListWrap"></div>
+            `;
+            $('#pageEditor').html(html);
+            loadGalleryList();
+        }
+
+        async function loadGalleryList() {
+            try {
+                const res = await fetch('/api/cms/collections?key=gallery');
+                const images = await res.json();
+                let html = '<div class="row g-3">';
+                images.forEach(img => {
+                    html += `
+                        <div class="col-md-4">
+                            <div class="card">
+                                <img src="${img.image_url}" class="card-img-top" style="height:200px;object-fit:cover">
+                                <div class="card-body text-center">
+                                    <p class="mb-2 small">${img.title || 'Untitled'}</p>
+                                    <button class="btn-delete btn-sm" onclick="deleteGalleryImage(${img.id})"><i class="fa fa-trash"></i> Remove</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                $('#galleryListWrap').html(html || '<div class="card p-4 text-center text-muted">No images yet.</div>');
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        function addGalleryImage() {
+            const html = `
+                <div class="card mb-3">
+                    <div class="card-header"><div class="section-icon"><i class="fa fa-image"></i></div>Add Gallery Image</div>
+                    <div class="card-body">
+                        <div class="field-group">
+                            <label class="field-label"><i class="fa fa-image"></i>Image URL</label>
+                            <input type="text" class="form-control" id="galleryImageUrl" placeholder="https://example.com/image.jpg">
+                        </div>
+                        <div class="field-group">
+                            <label class="field-label"><i class="fa fa-font"></i>Caption (Optional)</label>
+                            <input type="text" class="form-control" id="galleryCaption" placeholder="Photo description">
+                        </div>
+                        <div class="form-save-footer">
+                            <button class="btn btn-secondary" onclick="loadGalleryList()">Cancel</button>
+                            <button class="btn-fenu" onclick="saveGalleryImage()"><i class="fa fa-save"></i> Add Image</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            $('#galleryListWrap').prepend(html);
+        }
+
+        async function saveGalleryImage() {
+            const data = {
+                collection_key: 'gallery',
+                title: $('#galleryCaption').val() || 'Gallery Image',
+                image_url: $('#galleryImageUrl').val(),
+                is_active: 1
+            };
+            try {
+                await fetch('/api/cms/collections', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
+                $('#saveIndicator').fadeIn().delay(2000).fadeOut();
+                loadGalleryList();
+            } catch(e) {
+                alert('Error saving image');
+            }
+        }
+
+        async function deleteGalleryImage(id) {
+            if (!confirm('Delete this image?')) return;
+            try {
+                await fetch(`/api/cms/collections/${id}`, { method: 'DELETE' });
+                $('#saveIndicator').fadeIn().delay(2000).fadeOut();
+                loadGalleryList();
+            } catch(e) {
+                alert('Error deleting image');
+            }
+        }
+
+        async function renderAuditLog() {
+            const html = `
+                <div class="page-title-bar">
+                    <h2><i class="fa fa-history me-2" style="color:var(--fenu-orange)"></i>Audit Log</h2>
+                    <span class="page-badge">System</span>
+                </div>
+                <div class="help-banner">
+                    <i class="fa fa-info-circle"></i>
+                    <strong>Audit Log:</strong> This shows all changes made to the website content. Use filters to find specific changes.
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-body" style="padding:14px 20px">
+                        <div class="row g-2 align-items-end">
+                            <div class="col">
+                                <label class="field-label"><i class="fa fa-file"></i>Page</label>
+                                <select class="form-control" id="filterPage">
+                                    <option value="">All Pages</option>
+                                    <option value="index.html">Home</option>
+                                    <option value="about.html">About</option>
+                                    <option value="thematic.html">Thematic</option>
+                                    <option value="work.html">Work</option>
+                                    <option value="partners.html">Partners</option>
+                                    <option value="gallery.html">Gallery</option>
+                                    <option value="publications.html">Publications</option>
+                                    <option value="contact.html">Contact</option>
+                                </select>
+                            </div>
+                            <div class="col">
+                                <label class="field-label"><i class="fa fa-bolt"></i>Action</label>
+                                <select class="form-control" id="filterAction">
+                                    <option value="">All Actions</option>
+                                    <option value="CREATE">Create</option>
+                                    <option value="UPDATE">Update</option>
+                                    <option value="DELETE">Delete</option>
+                                </select>
+                            </div>
+                            <div class="col">
+                                <label class="field-label"><i class="fa fa-calendar"></i>From Date</label>
+                                <input type="date" class="form-control" id="filterFrom">
+                            </div>
+                            <div class="col">
+                                <label class="field-label"><i class="fa fa-calendar"></i>To Date</label>
+                                <input type="date" class="form-control" id="filterTo">
+                            </div>
+                            <div class="col-auto">
+                                <button class="btn-fenu" onclick="applyAuditFilters()"><i class="fa fa-filter"></i> Filter</button>
+                            </div>
+                            <div class="col-auto">
+                                <button class="btn-add" onclick="printAuditReport()"><i class="fa fa-print me-1"></i> Print</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="section-icon"><i class="fa fa-list"></i></div>
+                        Change History
+                        <span class="ms-auto" style="font-size:0.8rem;font-weight:400;color:#888" id="auditCount"></span>
+                    </div>
+                    <div class="card-body" style="padding:0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0" id="auditTable">
+                                <thead style="background:#f8f9fa;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.04em">
+                                    <tr>
+                                        <th style="padding:12px 16px">Date / Time</th>
+                                        <th style="padding:12px 16px">User</th>
+                                        <th style="padding:12px 16px">Page</th>
+                                        <th style="padding:12px 16px">Section</th>
+                                        <th style="padding:12px 16px">Action</th>
+                                        <th style="padding:12px 16px">Before</th>
+                                        <th style="padding:12px 16px">After</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="auditTableBody">
+                                    <tr><td colspan="7" class="text-center py-4"><div class="spinner-border spinner-border-sm" style="color:var(--fenu-orange)"></div> Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+            $("#pageEditor").html(html);
+
+            try {
+                const response = await fetch('/api/audit-log');
+                allAuditLogs = await response.json();
+                renderAuditRows(allAuditLogs);
+            } catch (e) {
+                $("#auditTableBody").html('<tr><td colspan="7" class="text-center text-danger py-3">Error loading audit log</td></tr>');
+            }
+        }
+
+        function renderAuditRows(logs) {
+            $('#auditCount').text(logs.length + ' record' + (logs.length !== 1 ? 's' : ''));
+            if (logs.length === 0) {
+                $("#auditTableBody").html('<tr><td colspan="7" class="text-center py-4 text-muted">No changes recorded yet</td></tr>');
+                return;
+            }
+            const actionColors = { CREATE: '#1ca4e3', UPDATE: 'var(--fenu-orange)', DELETE: '#dc3545' };
+            let rows = '';
+            logs.forEach(log => {
+                const date = new Date(log.created_at).toLocaleString();
+                const oldVal = log.old_value ? (log.old_value.length > 60 ? log.old_value.substring(0, 60) + '…' : log.old_value) : '<span class="text-muted">—</span>';
+                const newVal = log.new_value ? (log.new_value.length > 60 ? log.new_value.substring(0, 60) + '…' : log.new_value) : '<span class="text-muted">—</span>';
+                const color = actionColors[log.action] || '#888';
+                rows += `
+                    <tr style="font-size:0.85rem">
+                        <td style="padding:10px 16px;white-space:nowrap;color:#555">${date}</td>
+                        <td style="padding:10px 16px"><i class="fa fa-user-circle me-1" style="color:var(--fenu-orange)"></i>${log.username || 'admin'}</td>
+                        <td style="padding:10px 16px"><code style="font-size:0.78rem;background:#f0f2f5;padding:2px 6px;border-radius:4px">${log.page_path || '—'}</code></td>
+                        <td style="padding:10px 16px;color:#666">${log.section_key || '—'}</td>
+                        <td style="padding:10px 16px"><span style="background:${color};color:#fff;font-size:0.72rem;font-weight:700;padding:3px 10px;border-radius:999px;letter-spacing:0.05em">${log.action}</span></td>
+                        <td style="padding:10px 16px;color:#888;max-width:160px" title="${log.old_value || ''}">${oldVal}</td>
+                        <td style="padding:10px 16px;color:#333;max-width:160px" title="${log.new_value || ''}">${newVal}</td>
+                    </tr>`;
+            });
+            $("#auditTableBody").html(rows);
+        }
+
+        function applyAuditFilters() {
+            const page   = $('#filterPage').val();
+            const action = $('#filterAction').val();
+            const from   = $('#filterFrom').val()  ? new Date($('#filterFrom').val())  : null;
+            const to     = $('#filterTo').val()    ? new Date($('#filterTo').val() + 'T23:59:59') : null;
+            const filtered = allAuditLogs.filter(log => {
+                if (page   && log.page_path !== page)     return false;
+                if (action && log.action    !== action)   return false;
+                const d = new Date(log.created_at);
+                if (from && d < from) return false;
+                if (to   && d > to)   return false;
+                return true;
+            });
+            renderAuditRows(filtered);
+        }
+
+        function printAuditReport() {
+            const rows = document.getElementById('auditTable').outerHTML;
+            const win = window.open('', '_blank');
+            win.document.write(`
+                <!doctype html><html><head>
+                <title>FENU Audit Report - ${new Date().toLocaleDateString()}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 30px; color: #222; }
+                    h1 { color: #0f2f45; font-size: 1.4rem; margin-bottom: 4px; }
+                    .sub { color: #888; font-size: 0.85rem; margin-bottom: 20px; }
+                    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+                    th { background: #0f2f45; color: #fff; padding: 8px 10px; text-align: left; }
+                    td { padding: 7px 10px; border-bottom: 1px solid #eee; }
+                    tr:nth-child(even) td { background: #f9f9f9; }
+                    span[style] { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                    @media print { body { padding: 10px; } }
+                </style>
+                </head><body>
+                <h1>FENU Uganda — Content Change Report</h1>
+                <div class="sub">Generated: ${new Date().toLocaleString()} &nbsp;|&nbsp; Total records: ${allAuditLogs.length}</div>
+                ${rows}
+                <script>window.onload=()=>window.print();<\/script>
+                </body></html>`);
+            win.document.close();
+        }
+
+        async function loadCurrentContent(pagePath) {
+            try {
+                const response = await fetch(`/api/cms/sections?page=${encodeURIComponent(pagePath)}`);
+                const data = await response.json();
+                data.forEach((item) => {
+                    const $el = $(`[data-cms-id="${item.section_key}"]`);
+                    if ($el.length) {
+                        $el.val(item.content_html);
+                        // Update placeholder with current value if empty
+                        if (!item.content_html && $el.attr('placeholder')) {
+                            // Keep placeholder as is
+                        }
+                        if ($el.attr('data-img-preview') && item.content_html) {
+                            const wrap = $(`#prev-${item.section_key}`);
+                            wrap.find('img').attr('src', item.content_html);
+                            wrap.addClass('visible');
+                        }
+                    }
+                });
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        // Real-time preview update as admin types
+        let liveUpdateTimeout = null;
+        $(document).on('input', '.live-preview-input', function() {
+            const $input = $(this);
+            $input.addClass('live-updating');
+            clearTimeout(liveUpdateTimeout);
+            const cmsId = $input.attr('data-cms-id');
+            const newValue = $input.val();
+            
+            liveUpdateTimeout = setTimeout(() => {
+                $input.removeClass('live-updating');
+                try {
+                    const frame = document.getElementById('sitePreview');
+                    if (!frame || !frame.contentDocument) return;
+                    
+                    const doc = frame.contentDocument;
+                    const targetEl = doc.querySelector(`[data-cms-id="${cmsId}"]`);
+                    
+                    if (targetEl) {
+                        // Handle background images
+                        if (cmsId.includes('-hero-bg-')) {
+                            targetEl.style.backgroundImage = `url("${newValue}")`;
+                        }
+                        // Handle regular content
+                        else if (targetEl.tagName === 'IMG') {
+                            targetEl.src = newValue;
+                        } else if (targetEl.tagName === 'A' && newValue.startsWith('http')) {
+                            targetEl.href = newValue;
+                        } else {
+                            targetEl.innerHTML = newValue;
+                        }
+                    }
+                } catch(err) {
+                    console.warn('Live preview update failed:', err);
+                }
+            }, 500);
+        });
+
+        // Live image preview on input (already handled by live-preview-input above)
+        $(document).on('input', '[data-img-preview]', function() {
+            const val = $(this).val().trim();
+            const wrap = $('#prev-' + $(this).attr('data-cms-id'));
+            if (val) {
+                wrap.find('img').attr('src', val);
+                wrap.addClass('visible');
+            } else {
+                wrap.removeClass('visible');
+            }
+        });
+
+        $(document).on("submit", ".cms-form", async function (e) {
+            e.preventDefault();
+            const btn = $(this).find('.btn-fenu');
+            btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Saving...');
+
+            const pagePath = $(this).data("page");
+            const inputs = $(this).find("[data-cms-id]");
+            
+            for (let input of inputs) {
+                const $el = $(input);
+                const sectionKey = $el.attr("data-cms-id");
+                const payload = {
+                    page_path: pagePath,
+                    section_key: sectionKey,
+                    selector: `[data-cms-id="${sectionKey}"]`,
+                    content_html: $el.val(),
+                    is_active: 1,
+                };
+
+                try {
+                    await fetch("/api/cms/sections", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload),
+                    });
+                } catch (err) {
+                    console.error("Save error:", err);
+                }
+            }
+
+            btn.prop('disabled', false).html('<i class="fa fa-save"></i> Save Section');
+            $("#saveIndicator").fadeIn().delay(2000).fadeOut();
+            // Broadcast to all visitors via Socket.IO
+            socket.emit('cms-update', { page: pagePath });
+            setTimeout(refreshPreview, 400);
+        });
+
+        $(".nav-link-custom").on("click", function () {
+            $(".nav-link-custom").removeClass("active");
+            $(this).addClass("active");
+            const pageKey = $(this).data("page");
+            renderEditor(pageKey);
+            loadPreview(pageKey);
+        });
+
+        $("#logoutBtn").on("click", () => {
+            try {
+                localStorage.removeItem("adminLoggedIn");
+            } catch (e) {
+                console.log('localStorage not accessible:', e);
+            }
+            window.location.href = "login.html";
+        });
+
+        renderEditor("home");
+        loadPreview("home");
+    </script>
+</body>
+</html>
