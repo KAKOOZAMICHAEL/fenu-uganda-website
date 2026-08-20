@@ -31,7 +31,7 @@ Located at: **Admin Dashboard → Manage Testimonials**
 
 ### 2. Image Management
 Two ways to add images:
-1. **Upload from Local Storage**: Click "Choose File" and select an image from your computer (max 5MB)
+1. **Upload from Local Storage**: Click "Choose File" and select an image from your computer (max 15MB)
 2. **Insert URL**: Paste an image URL directly into the text field
 
 Supported formats: PNG, JPEG, WebP, GIF

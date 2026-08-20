@@ -1823,7 +1823,7 @@
                                                <div class="img-upload-area" onclick="document.getElementById('fileInput-${field.id}').click()">
                                                    <i class="fa fa-cloud-upload-alt fa-2x mb-2" style="color:var(--fenu-orange)"></i>
                                                    <div style="font-weight:600;font-size:0.9rem">Click to Upload from Computer</div>
-                                                   <div style="font-size:0.78rem;color:#999;margin-top:4px">PNG, JPG, WEBP — max 5MB</div>
+                                                   <div style="font-size:0.78rem;color:#999;margin-top:4px">PNG, JPG, WEBP — max 15MB</div>
                                                    <div class="upload-progress" id="uploadprog-${field.id}" style="display:none">
                                                        <div class="spinner-border spinner-border-sm" style="color:var(--fenu-orange)"></div>
                                                        <span>Uploading &amp; saving...</span>
@@ -3815,8 +3815,8 @@
                 fileInput.value = '';
                 return;
             }
-            if (file.size > 5 * 1024 * 1024) {
-                alert('Image must be smaller than 5MB');
+            if (file.size > 15 * 1024 * 1024) {
+                alert('Image must be smaller than 15MB');
                 fileInput.value = '';
                 return;
             }
@@ -3976,7 +3976,7 @@
             const file = fileInput.files[0];
             if (!file) return;
             if (!file.type.startsWith('image/')) { alert('Please select an image file'); return; }
-            if (file.size > 5 * 1024 * 1024) { alert('Image must be under 5MB'); return; }
+            if (file.size > 15 * 1024 * 1024) { alert('Image must be under 15MB'); return; }
             const formData = new FormData();
             formData.append('image', file);
             try {
