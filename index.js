@@ -1,120 +1,178 @@
-const express = require("express");
-const http = require("http");
-const { Server } = require("socket.io");
-const path = require("path");
-const fs = require("fs");
-const multer = require("multer");
-const db = require("./db");
-const { initCmsSchema } = require("./cms-schema");
+require('dotenv').config();
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+const path = require('path');
+const multer = require('multer');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cloudinary = require('cloudinary').v2;
+const db = require('./db');
+const { initCmsSchema } = require('./cms-schema');
 
+// ── Cloudinary configuration ──────────────────────────────────────────────────
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// ── Express / Socket.IO setup ─────────────────────────────────────────────────
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 const PORT = process.env.PORT || 3000;
 
-initCmsSchema();
+// ── Multer / Cloudinary storage engines ──────────────────────────────────────
 
-const uploadsDir = path.join(__dirname, "uploads");
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, uploadsDir),
-  filename: (_req, file, cb) => {
-    const safeName = file.originalname.replace(/[^a-zA-Z0-9.\-_]/g, "_");
-    cb(null, `${Date.now()}-${safeName}`);
+// Images
+const imageStorage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: 'fenu-cms/images',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'gif'],
+    resource_type: 'image',
   },
 });
-
 const upload = multer({
-  storage,
+  storage: imageStorage,
   limits: { fileSize: 15 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     if (!/^image\/(png|jpe?g|webp|gif)$/i.test(file.mimetype)) {
-      return cb(new Error("Only image files are allowed."));
+      return cb(new Error('Only image files are allowed.'));
     }
     cb(null, true);
   },
 });
 
+// Videos
+const videoStorage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: 'fenu-cms/videos',
+    resource_type: 'video',
+    allowed_formats: ['mp4', 'webm', 'ogg', 'mov', 'avi'],
+  },
+});
 const uploadVideo = multer({
-  storage,
+  storage: videoStorage,
   limits: { fileSize: 50 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     if (!/^video\/(mp4|webm|ogg|quicktime|x-msvideo)$/i.test(file.mimetype)) {
-      return cb(new Error("Only video files are allowed."));
+      return cb(new Error('Only video files are allowed.'));
     }
     cb(null, true);
   },
 });
 
-// Reports (PDF) storage — files live under uploads/reports/ and are served
-// automatically by the existing "/uploads" static route below.
-const reportsUploadDir = path.join(uploadsDir, "reports");
-if (!fs.existsSync(reportsUploadDir)) {
-  fs.mkdirSync(reportsUploadDir, { recursive: true });
-}
-
-const reportStorage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, reportsUploadDir),
-  filename: (_req, file, cb) => {
-    const safeName = file.originalname.replace(/[^a-zA-Z0-9.\-_]/g, "_");
-    cb(null, `${Date.now()}-${safeName}`);
+// PDF reports
+const reportStorage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: 'fenu-cms/reports',
+    resource_type: 'raw',
+    allowed_formats: ['pdf'],
   },
 });
-
 const uploadReportPdf = multer({
   storage: reportStorage,
   limits: { fileSize: 20 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    if (file.mimetype !== "application/pdf") {
-      return cb(new Error("Only PDF files are allowed."));
+    if (file.mimetype !== 'application/pdf') {
+      return cb(new Error('Only PDF files are allowed.'));
     }
     cb(null, true);
   },
 });
 
-app.use(express.json({ limit: "2mb" }));
+// ── Middleware ────────────────────────────────────────────────────────────────
+app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true }));
-app.use("/uploads", express.static(uploadsDir));
 app.use(express.static(path.join(__dirname)));
 
 const emitChange = (event, data) => io.emit(event, data);
 
+// ── Helper: get a Cloudinary URL from a multer-cloudinary file ────────────────
+function getFileUrl(file) {
+  // multer-storage-cloudinary stores the URL in file.path
+  return file.path || file.secure_url || '';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // ARTICLES API
-app.get("/api/articles", (req, res) => {
+// ═══════════════════════════════════════════════════════════════════════════════
+app.get('/api/articles', async (_req, res) => {
   try {
-    const articles = db
-      .prepare("SELECT * FROM articles ORDER BY created_at DESC")
-      .all();
-    res.json(articles);
+    const { rows } = await db.query('SELECT * FROM articles ORDER BY created_at DESC');
+    res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-app.get("/api/articles/:id", (req, res) => {
+app.get('/api/articles/:id', async (req, res) => {
+  try {
+    const { rows } = await db.query('SELECT * FROM articles WHERE id = $1', [req.params.id]);
+    if (!rows.length) return res.status(404).json({ error: 'Article not found.' });
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/articles', async (req, res) => {
+  const { title, content, author, image_url } = req.body;
+  if (!title || !content || !author)
+    return res.status(400).json({ error: 'Title, content, and author are required.' });
+  try {
+    const { rows } = await db.query(
+      'INSERT INTO articles (title, content, author, image_url) VALUES ($1, $2, $3, $4) RETURNING *',
+      [title, content, author, image_url]
+    );
+    emitChange('newArticle', rows[0]);
+    res.status(201).json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/articles/:id', async (req, res) => {
   const { id } = req.params;
+  const { title, content, author, image_url } = req.body;
   try {
-    const article = db.prepare("SELECT * FROM articles WHERE id = ?").get(id);
-    if (!article) return res.status(404).json({ error: "Article not found." });
-    res.json(article);
+    const { rows: existing } = await db.query('SELECT * FROM articles WHERE id = $1', [id]);
+    if (!existing.length) return res.status(404).json({ error: 'Article not found.' });
+    const e = existing[0];
+    const { rows } = await db.query(
+      'UPDATE articles SET title=$1, content=$2, author=$3, image_url=$4, updated_at=NOW() WHERE id=$5 RETURNING *',
+      [title || e.title, content || e.content, author || e.author, image_url || e.image_url, id]
+    );
+    emitChange('updatedArticle', rows[0]);
+    res.json(rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-app.get("/api/site-data", (req, res) => {
+app.delete('/api/articles/:id', async (req, res) => {
   try {
-    const rows = db.prepare("SELECT key, value FROM site_data").all();
+    const { rowCount } = await db.query('DELETE FROM articles WHERE id = $1', [req.params.id]);
+    if (!rowCount) return res.status(404).json({ error: 'Article not found.' });
+    emitChange('deletedArticle', { id: req.params.id });
+    res.status(204).send();
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SITE DATA API
+// ═══════════════════════════════════════════════════════════════════════════════
+app.get('/api/site-data', async (_req, res) => {
+  try {
+    const { rows } = await db.query('SELECT key, value FROM site_data');
     const data = {};
     rows.forEach((row) => {
-      try {
-        data[row.key] = JSON.parse(row.value);
-      } catch (_e) {
-        data[row.key] = row.value;
-      }
+      try { data[row.key] = JSON.parse(row.value); } catch { data[row.key] = row.value; }
     });
     res.json(data);
   } catch (err) {
@@ -122,345 +180,277 @@ app.get("/api/site-data", (req, res) => {
   }
 });
 
-app.get("/api/site-data/:key", (req, res) => {
-  const { key } = req.params;
+app.get('/api/site-data/:key', async (req, res) => {
   try {
-    const row = db.prepare("SELECT value FROM site_data WHERE key = ?").get(key);
-    if (!row) return res.status(404).json({ error: "Site data key not found." });
-    try {
-      return res.json(JSON.parse(row.value));
-    } catch (_e) {
-      return res.json(row.value);
-    }
+    const { rows } = await db.query('SELECT value FROM site_data WHERE key = $1', [req.params.key]);
+    if (!rows.length) return res.status(404).json({ error: 'Site data key not found.' });
+    try { return res.json(JSON.parse(rows[0].value)); } catch { return res.json(rows[0].value); }
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-app.post("/api/site-data", (req, res) => {
+app.post('/api/site-data', async (req, res) => {
   const { key, value } = req.body;
-  if (!key || typeof value === "undefined") {
-    return res.status(400).json({ error: "Site data key and value are required." });
-  }
+  if (!key || typeof value === 'undefined')
+    return res.status(400).json({ error: 'Site data key and value are required.' });
   try {
-    db.prepare("INSERT OR REPLACE INTO site_data (key, value) VALUES (?, ?)").run(
-      key,
-      JSON.stringify(value)
+    await db.query(
+      'INSERT INTO site_data (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value',
+      [key, JSON.stringify(value)]
     );
-    emitChange("siteDataUpdated", { key, value });
+    emitChange('siteDataUpdated', { key, value });
     res.json({ key, value });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// CMS Sections API
-app.get("/api/cms/sections", (req, res) => {
-  const { page } = req.query;
+// ═══════════════════════════════════════════════════════════════════════════════
+// CMS SECTIONS API
+// ═══════════════════════════════════════════════════════════════════════════════
+app.get('/api/cms/sections', async (req, res) => {
   try {
-    const rows = page
-      ? db
-          .prepare(
-            "SELECT * FROM cms_sections WHERE page_path = ? ORDER BY section_key"
-          )
-          .all(page)
-      : db.prepare("SELECT * FROM cms_sections ORDER BY page_path, section_key").all();
+    const { page } = req.query;
+    const { rows } = page
+      ? await db.query('SELECT * FROM cms_sections WHERE page_path = $1 ORDER BY section_key', [page])
+      : await db.query('SELECT * FROM cms_sections ORDER BY page_path, section_key');
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-app.post("/api/cms/sections", (req, res) => {
+app.post('/api/cms/sections', async (req, res) => {
   const { page_path, section_key, selector, content_html, is_active = 1 } = req.body;
-  if (!page_path || !section_key || !selector || typeof content_html !== "string") {
-    return res.status(400).json({ error: "Missing required fields." });
-  }
+  if (!page_path || !section_key || !selector || typeof content_html !== 'string')
+    return res.status(400).json({ error: 'Missing required fields.' });
   try {
-    // Check if record exists
-    const existing = db.prepare("SELECT * FROM cms_sections WHERE page_path = ? AND section_key = ?").get(page_path, section_key);
-    
+    const { rows: existing } = await db.query(
+      'SELECT * FROM cms_sections WHERE page_path = $1 AND section_key = $2',
+      [page_path, section_key]
+    );
+
     let row;
-    if (existing) {
-      // Update existing
-      db.prepare(
-        `UPDATE cms_sections SET selector = ?, content_html = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP WHERE page_path = ? AND section_key = ?`
-      ).run(selector, content_html, is_active ? 1 : 0, page_path, section_key);
-      row = db.prepare("SELECT * FROM cms_sections WHERE page_path = ? AND section_key = ?").get(page_path, section_key);
-      
-      // Log the change
-      db.prepare(
-        `INSERT INTO cms_audit_log (username, action, table_name, record_id, page_path, section_key, old_value, new_value) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-      ).run('admin', 'UPDATE', 'cms_sections', row.id, page_path, section_key, existing.content_html, content_html);
-      
-      emitChange("cmsSectionUpdated", row);
+    if (existing.length) {
+      const { rows } = await db.query(
+        `UPDATE cms_sections SET selector=$1, content_html=$2, is_active=$3, updated_at=NOW()
+         WHERE page_path=$4 AND section_key=$5 RETURNING *`,
+        [selector, content_html, is_active ? 1 : 0, page_path, section_key]
+      );
+      row = rows[0];
+      await db.query(
+        `INSERT INTO cms_audit_log (username, action, table_name, record_id, page_path, section_key, old_value, new_value)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        ['admin', 'UPDATE', 'cms_sections', row.id, page_path, section_key, existing[0].content_html, content_html]
+      );
+      emitChange('cmsSectionUpdated', row);
     } else {
-      // Insert new
-      const info = db
-        .prepare(
-          `INSERT INTO cms_sections (page_path, section_key, selector, content_html, is_active)
-           VALUES (?, ?, ?, ?, ?)`
-        )
-        .run(page_path, section_key, selector, content_html, is_active ? 1 : 0);
-      row = db.prepare("SELECT * FROM cms_sections WHERE id = ?").get(info.lastInsertRowid);
-      
-      // Log the change
-      db.prepare(
-        `INSERT INTO cms_audit_log (username, action, table_name, record_id, page_path, section_key, old_value, new_value) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-      ).run('admin', 'CREATE', 'cms_sections', row.id, page_path, section_key, null, content_html);
-      
-      emitChange("cmsSectionCreated", row);
+      const { rows } = await db.query(
+        `INSERT INTO cms_sections (page_path, section_key, selector, content_html, is_active)
+         VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+        [page_path, section_key, selector, content_html, is_active ? 1 : 0]
+      );
+      row = rows[0];
+      await db.query(
+        `INSERT INTO cms_audit_log (username, action, table_name, record_id, page_path, section_key, old_value, new_value)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        ['admin', 'CREATE', 'cms_sections', row.id, page_path, section_key, null, content_html]
+      );
+      emitChange('cmsSectionCreated', row);
     }
-    
     res.status(201).json(row);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-app.put("/api/cms/sections/:id", (req, res) => {
+app.put('/api/cms/sections/:id', async (req, res) => {
   const { id } = req.params;
   const { page_path, section_key, selector, content_html, is_active } = req.body;
   try {
-    const existing = db.prepare("SELECT * FROM cms_sections WHERE id = ?").get(id);
-    if (!existing) return res.status(404).json({ error: "Section not found." });
-    db.prepare(
-      `UPDATE cms_sections SET page_path = ?, section_key = ?, selector = ?, content_html = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`
-    ).run(
-      page_path || existing.page_path,
-      section_key || existing.section_key,
-      selector || existing.selector,
-      typeof content_html === "string" ? content_html : existing.content_html,
-      typeof is_active === "undefined" ? existing.is_active : is_active ? 1 : 0,
-      id
+    const { rows: existing } = await db.query('SELECT * FROM cms_sections WHERE id = $1', [id]);
+    if (!existing.length) return res.status(404).json({ error: 'Section not found.' });
+    const e = existing[0];
+    const { rows } = await db.query(
+      `UPDATE cms_sections SET page_path=$1, section_key=$2, selector=$3, content_html=$4, is_active=$5, updated_at=NOW()
+       WHERE id=$6 RETURNING *`,
+      [
+        page_path || e.page_path,
+        section_key || e.section_key,
+        selector || e.selector,
+        typeof content_html === 'string' ? content_html : e.content_html,
+        typeof is_active === 'undefined' ? e.is_active : is_active ? 1 : 0,
+        id,
+      ]
     );
-    const updated = db.prepare("SELECT * FROM cms_sections WHERE id = ?").get(id);
-    emitChange("cmsSectionUpdated", updated);
-    res.json(updated);
+    emitChange('cmsSectionUpdated', rows[0]);
+    res.json(rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-app.delete("/api/cms/sections/:id", (req, res) => {
-  const { id } = req.params;
+app.delete('/api/cms/sections/:id', async (req, res) => {
   try {
-    const info = db.prepare("DELETE FROM cms_sections WHERE id = ?").run(id);
-    if (!info.changes) return res.status(404).json({ error: "Section not found." });
-    emitChange("cmsSectionDeleted", { id: Number(id) });
+    const { rowCount } = await db.query('DELETE FROM cms_sections WHERE id = $1', [req.params.id]);
+    if (!rowCount) return res.status(404).json({ error: 'Section not found.' });
+    emitChange('cmsSectionDeleted', { id: Number(req.params.id) });
     res.status(204).send();
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// CMS Collections API
-app.get("/api/cms/collections", (req, res) => {
-  const { key } = req.query;
+// ═══════════════════════════════════════════════════════════════════════════════
+// CMS COLLECTIONS API
+// ═══════════════════════════════════════════════════════════════════════════════
+app.get('/api/cms/collections', async (req, res) => {
   try {
-    const rows = key
-      ? db
-          .prepare(
-            "SELECT * FROM cms_collections WHERE collection_key = ? ORDER BY sort_order, id"
-          )
-          .all(key)
-      : db.prepare("SELECT * FROM cms_collections ORDER BY collection_key, sort_order, id").all();
+    const { key } = req.query;
+    const { rows } = key
+      ? await db.query('SELECT * FROM cms_collections WHERE collection_key = $1 ORDER BY sort_order, id', [key])
+      : await db.query('SELECT * FROM cms_collections ORDER BY collection_key, sort_order, id');
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-app.post("/api/cms/collections", (req, res) => {
+app.post('/api/cms/collections', async (req, res) => {
   const {
     collection_key,
     item_key = null,
     title,
-    description = "",
-    image_url = "",
-    link_url = "",
-    extra_json = "",
+    description = '',
+    image_url = '',
+    link_url = '',
+    extra_json = '',
     sort_order = 0,
     is_active = 1,
   } = req.body;
-  if (!collection_key || !title) {
-    return res.status(400).json({ error: "Collection key and title are required." });
-  }
+  if (!collection_key || !title)
+    return res.status(400).json({ error: 'Collection key and title are required.' });
   try {
-    const info = db
-      .prepare(
-        `INSERT INTO cms_collections
-          (collection_key, item_key, title, description, image_url, link_url, extra_json, sort_order, is_active)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
-      )
-      .run(
-        collection_key,
-        item_key,
-        title,
-        description,
-        image_url,
-        link_url,
-        extra_json,
-        Number(sort_order) || 0,
-        is_active ? 1 : 0
-      );
-    const row = db
-      .prepare("SELECT * FROM cms_collections WHERE id = ?")
-      .get(info.lastInsertRowid);
-    emitChange("cmsCollectionItemCreated", row);
-    res.status(201).json(row);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.put("/api/cms/collections/:id", (req, res) => {
-  const { id } = req.params;
-  try {
-    const existing = db.prepare("SELECT * FROM cms_collections WHERE id = ?").get(id);
-    if (!existing) return res.status(404).json({ error: "Collection item not found." });
-    const next = { ...existing, ...req.body };
-    db.prepare(
-      `UPDATE cms_collections
-       SET collection_key = ?, item_key = ?, title = ?, description = ?, image_url = ?, link_url = ?, extra_json = ?, sort_order = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP
-       WHERE id = ?`
-    ).run(
-      next.collection_key,
-      next.item_key,
-      next.title,
-      next.description,
-      next.image_url,
-      next.link_url,
-      next.extra_json,
-      Number(next.sort_order) || 0,
-      next.is_active ? 1 : 0,
-      id
+    const { rows } = await db.query(
+      `INSERT INTO cms_collections
+        (collection_key, item_key, title, description, image_url, link_url, extra_json, sort_order, is_active)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+      [collection_key, item_key, title, description, image_url, link_url, extra_json, Number(sort_order) || 0, is_active ? 1 : 0]
     );
-    const updated = db.prepare("SELECT * FROM cms_collections WHERE id = ?").get(id);
-    emitChange("cmsCollectionItemUpdated", updated);
-    res.json(updated);
+    emitChange('cmsCollectionItemCreated', rows[0]);
+    res.status(201).json(rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-app.delete("/api/cms/collections/:id", (req, res) => {
+app.put('/api/cms/collections/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    const info = db.prepare("DELETE FROM cms_collections WHERE id = ?").run(id);
-    if (!info.changes) return res.status(404).json({ error: "Collection item not found." });
-    emitChange("cmsCollectionItemDeleted", { id: Number(id) });
+    const { rows: existing } = await db.query('SELECT * FROM cms_collections WHERE id = $1', [id]);
+    if (!existing.length) return res.status(404).json({ error: 'Collection item not found.' });
+    const next = { ...existing[0], ...req.body };
+    const { rows } = await db.query(
+      `UPDATE cms_collections
+       SET collection_key=$1, item_key=$2, title=$3, description=$4, image_url=$5, link_url=$6,
+           extra_json=$7, sort_order=$8, is_active=$9, updated_at=NOW()
+       WHERE id=$10 RETURNING *`,
+      [
+        next.collection_key, next.item_key, next.title, next.description,
+        next.image_url, next.link_url, next.extra_json,
+        Number(next.sort_order) || 0, next.is_active ? 1 : 0, id,
+      ]
+    );
+    emitChange('cmsCollectionItemUpdated', rows[0]);
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/cms/collections/:id', async (req, res) => {
+  try {
+    const { rowCount } = await db.query('DELETE FROM cms_collections WHERE id = $1', [req.params.id]);
+    if (!rowCount) return res.status(404).json({ error: 'Collection item not found.' });
+    emitChange('cmsCollectionItemDeleted', { id: Number(req.params.id) });
     res.status(204).send();
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Media API
-app.get("/api/media", (_req, res) => {
+// ═══════════════════════════════════════════════════════════════════════════════
+// MEDIA API
+// ═══════════════════════════════════════════════════════════════════════════════
+app.get('/api/media', async (_req, res) => {
   try {
-    const rows = db.prepare("SELECT * FROM media_assets ORDER BY uploaded_at DESC").all();
+    const { rows } = await db.query('SELECT * FROM media_assets ORDER BY uploaded_at DESC');
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-app.post("/api/media/upload", upload.single("file"), (req, res) => {
-  if (!req.file) return res.status(400).json({ error: "No file uploaded." });
+app.post('/api/media/upload', upload.single('file'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No file uploaded.' });
   try {
-    const url = `/uploads/${req.file.filename}`;
-    const info = db
-      .prepare(
-        "INSERT INTO media_assets (filename, original_name, mime_type, size_bytes, url) VALUES (?, ?, ?, ?, ?)"
-      )
-      .run(
-        req.file.filename,
-        req.file.originalname,
-        req.file.mimetype,
-        req.file.size,
-        url
-      );
-    const asset = db
-      .prepare("SELECT * FROM media_assets WHERE id = ?")
-      .get(info.lastInsertRowid);
-    emitChange("mediaUploaded", asset);
-    res.status(201).json(asset);
+    const url = getFileUrl(req.file);
+    const { rows } = await db.query(
+      'INSERT INTO media_assets (filename, original_name, mime_type, size_bytes, url) VALUES ($1,$2,$3,$4,$5) RETURNING *',
+      [req.file.filename || req.file.public_id, req.file.originalname, req.file.mimetype, req.file.size, url]
+    );
+    emitChange('mediaUploaded', rows[0]);
+    res.status(201).json(rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
 // Image upload endpoint for CMS
-app.post("/api/upload-image", upload.single("image"), (req, res) => {
-  if (!req.file) return res.status(400).json({ error: "No image uploaded." });
+app.post('/api/upload-image', upload.single('image'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No image uploaded.' });
   try {
-    const url = `/uploads/${req.file.filename}`;
-    const info = db
-      .prepare(
-        "INSERT INTO media_assets (filename, original_name, mime_type, size_bytes, url) VALUES (?, ?, ?, ?, ?)"
-      )
-      .run(
-        req.file.filename,
-        req.file.originalname,
-        req.file.mimetype,
-        req.file.size,
-        url
-      );
-    const asset = db
-      .prepare("SELECT * FROM media_assets WHERE id = ?")
-      .get(info.lastInsertRowid);
-    emitChange("mediaUploaded", asset);
-    res.status(201).json({ url, filename: req.file.filename, asset });
+    const url = getFileUrl(req.file);
+    const { rows } = await db.query(
+      'INSERT INTO media_assets (filename, original_name, mime_type, size_bytes, url) VALUES ($1,$2,$3,$4,$5) RETURNING *',
+      [req.file.filename || req.file.public_id, req.file.originalname, req.file.mimetype, req.file.size, url]
+    );
+    emitChange('mediaUploaded', rows[0]);
+    res.status(201).json({ url, filename: req.file.filename || req.file.public_id, asset: rows[0] });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
 // Video upload endpoint for CMS
-app.post("/api/upload-video", uploadVideo.single("video"), (req, res) => {
-  if (!req.file) return res.status(400).json({ error: "No video uploaded." });
+app.post('/api/upload-video', uploadVideo.single('video'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No video uploaded.' });
   try {
-    const url = `/uploads/${req.file.filename}`;
-    const info = db
-      .prepare(
-        "INSERT INTO media_assets (filename, original_name, mime_type, size_bytes, url) VALUES (?, ?, ?, ?, ?)"
-      )
-      .run(
-        req.file.filename,
-        req.file.originalname,
-        req.file.mimetype,
-        req.file.size,
-        url
-      );
-    const asset = db
-      .prepare("SELECT * FROM media_assets WHERE id = ?")
-      .get(info.lastInsertRowid);
-    emitChange("mediaUploaded", asset);
-    res.status(201).json({ url, filename: req.file.filename, asset });
+    const url = getFileUrl(req.file);
+    const { rows } = await db.query(
+      'INSERT INTO media_assets (filename, original_name, mime_type, size_bytes, url) VALUES ($1,$2,$3,$4,$5) RETURNING *',
+      [req.file.filename || req.file.public_id, req.file.originalname, req.file.mimetype, req.file.size, url]
+    );
+    emitChange('mediaUploaded', rows[0]);
+    res.status(201).json({ url, filename: req.file.filename || req.file.public_id, asset: rows[0] });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// ── REPORTS API ──
-// Reports are stored as rows in the existing cms_collections table
-// (collection_key = "reports"), the same generic store already used for
-// partners, team members, testimonials, etc. link_url holds the path to the
-// uploaded PDF; extra_json holds the original filename + size for display.
+// ═══════════════════════════════════════════════════════════════════════════════
+// REPORTS API
+// ═══════════════════════════════════════════════════════════════════════════════
 function formatReportRow(row) {
   let extra = {};
-  try {
-    extra = row.extra_json ? JSON.parse(row.extra_json) : {};
-  } catch (_e) {
-    extra = {};
-  }
+  try { extra = row.extra_json ? JSON.parse(row.extra_json) : {}; } catch { extra = {}; }
   return {
     id: row.id,
     title: row.title,
-    description: row.description || "",
-    pdf_url: row.link_url || "",
-    original_filename: extra.original_filename || "",
+    description: row.description || '',
+    pdf_url: row.link_url || '',
+    original_filename: extra.original_filename || '',
     size_bytes: extra.size_bytes || null,
     sort_order: row.sort_order,
     is_active: !!row.is_active,
@@ -469,284 +459,204 @@ function formatReportRow(row) {
   };
 }
 
-app.get("/api/reports", (_req, res) => {
+app.get('/api/reports', async (_req, res) => {
   try {
-    const rows = db
-      .prepare(
-        "SELECT * FROM cms_collections WHERE collection_key = 'reports' ORDER BY sort_order, id"
-      )
-      .all();
+    const { rows } = await db.query(
+      "SELECT * FROM cms_collections WHERE collection_key = 'reports' ORDER BY sort_order, id"
+    );
     res.json(rows.map(formatReportRow));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-app.post("/api/reports", uploadReportPdf.single("pdf"), (req, res) => {
-  const { title, description = "" } = req.body;
-  if (!title || !title.trim()) {
-    if (req.file) fs.unlink(req.file.path, () => {});
-    return res.status(400).json({ error: "Report title is required." });
-  }
-  if (!req.file) {
-    return res.status(400).json({ error: "A PDF file is required." });
-  }
+app.post('/api/reports', uploadReportPdf.single('pdf'), async (req, res) => {
+  const { title, description = '' } = req.body;
+  if (!title || !title.trim()) return res.status(400).json({ error: 'Report title is required.' });
+  if (!req.file) return res.status(400).json({ error: 'A PDF file is required.' });
   try {
-    const pdfUrl = `/uploads/reports/${req.file.filename}`;
+    const pdfUrl = getFileUrl(req.file);
     const extraJson = JSON.stringify({
       original_filename: req.file.originalname,
       size_bytes: req.file.size,
     });
-    const nextOrder = db
-      .prepare(
-        "SELECT COALESCE(MAX(sort_order), -1) + 1 AS n FROM cms_collections WHERE collection_key = 'reports'"
-      )
-      .get().n;
-    const info = db
-      .prepare(
-        `INSERT INTO cms_collections
-          (collection_key, item_key, title, description, image_url, link_url, extra_json, sort_order, is_active)
-         VALUES ('reports', NULL, ?, ?, '', ?, ?, ?, 1)`
-      )
-      .run(title.trim(), description, pdfUrl, extraJson, nextOrder);
-    const row = db
-      .prepare("SELECT * FROM cms_collections WHERE id = ?")
-      .get(info.lastInsertRowid);
-    const report = formatReportRow(row);
-    emitChange("reportCreated", report);
-    emitChange("cmsCollectionItemCreated", row);
+    const { rows: orderRows } = await db.query(
+      "SELECT COALESCE(MAX(sort_order), -1) + 1 AS n FROM cms_collections WHERE collection_key = 'reports'"
+    );
+    const nextOrder = orderRows[0].n;
+    const { rows } = await db.query(
+      `INSERT INTO cms_collections (collection_key, item_key, title, description, image_url, link_url, extra_json, sort_order, is_active)
+       VALUES ('reports', NULL, $1, $2, '', $3, $4, $5, 1) RETURNING *`,
+      [title.trim(), description, pdfUrl, extraJson, nextOrder]
+    );
+    const report = formatReportRow(rows[0]);
+    emitChange('reportCreated', report);
+    emitChange('cmsCollectionItemCreated', rows[0]);
     res.status(201).json(report);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-app.put("/api/reports/:id", uploadReportPdf.single("pdf"), (req, res) => {
+app.put('/api/reports/:id', uploadReportPdf.single('pdf'), async (req, res) => {
   const { id } = req.params;
   try {
-    const existing = db
-      .prepare("SELECT * FROM cms_collections WHERE id = ? AND collection_key = 'reports'")
-      .get(id);
-    if (!existing) {
-      if (req.file) fs.unlink(req.file.path, () => {});
-      return res.status(404).json({ error: "Report not found." });
-    }
-
-    const title = (req.body.title || "").trim() || existing.title;
-    const description =
-      req.body.description !== undefined ? req.body.description : existing.description;
-    let linkUrl = existing.link_url;
-    let extraJson = existing.extra_json;
+    const { rows: existing } = await db.query(
+      "SELECT * FROM cms_collections WHERE id = $1 AND collection_key = 'reports'", [id]
+    );
+    if (!existing.length) return res.status(404).json({ error: 'Report not found.' });
+    const e = existing[0];
+    const title = (req.body.title || '').trim() || e.title;
+    const description = req.body.description !== undefined ? req.body.description : e.description;
+    let linkUrl = e.link_url;
+    let extraJson = e.extra_json;
 
     if (req.file) {
-      // Replace the old PDF on disk if it was one of ours.
-      if (existing.link_url && existing.link_url.startsWith("/uploads/reports/")) {
-        fs.unlink(path.join(__dirname, existing.link_url), () => {});
-      }
-      linkUrl = `/uploads/reports/${req.file.filename}`;
-      extraJson = JSON.stringify({
-        original_filename: req.file.originalname,
-        size_bytes: req.file.size,
-      });
+      linkUrl = getFileUrl(req.file);
+      extraJson = JSON.stringify({ original_filename: req.file.originalname, size_bytes: req.file.size });
     }
 
-    db.prepare(
-      `UPDATE cms_collections
-       SET title = ?, description = ?, link_url = ?, extra_json = ?, updated_at = CURRENT_TIMESTAMP
-       WHERE id = ?`
-    ).run(title, description, linkUrl, extraJson, id);
-
-    const updated = db.prepare("SELECT * FROM cms_collections WHERE id = ?").get(id);
-    const report = formatReportRow(updated);
-    emitChange("reportUpdated", report);
-    emitChange("cmsCollectionItemUpdated", updated);
+    const { rows } = await db.query(
+      `UPDATE cms_collections SET title=$1, description=$2, link_url=$3, extra_json=$4, updated_at=NOW()
+       WHERE id=$5 RETURNING *`,
+      [title, description, linkUrl, extraJson, id]
+    );
+    const report = formatReportRow(rows[0]);
+    emitChange('reportUpdated', report);
+    emitChange('cmsCollectionItemUpdated', rows[0]);
     res.json(report);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-app.delete("/api/reports/:id", (req, res) => {
-  const { id } = req.params;
+app.delete('/api/reports/:id', async (req, res) => {
   try {
-    const existing = db
-      .prepare("SELECT * FROM cms_collections WHERE id = ? AND collection_key = 'reports'")
-      .get(id);
-    if (!existing) return res.status(404).json({ error: "Report not found." });
-
-    if (existing.link_url && existing.link_url.startsWith("/uploads/reports/")) {
-      fs.unlink(path.join(__dirname, existing.link_url), () => {});
-    }
-
-    db.prepare("DELETE FROM cms_collections WHERE id = ?").run(id);
-    emitChange("reportDeleted", { id: Number(id) });
-    emitChange("cmsCollectionItemDeleted", { id: Number(id) });
-    res.status(204).send();
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post("/api/articles", (req, res) => {
-  const { title, content, author, image_url } = req.body;
-  if (!title || !content || !author) {
-    return res.status(400).json({ error: "Title, content, and author are required." });
-  }
-  try {
-    const info = db
-      .prepare("INSERT INTO articles (title, content, author, image_url) VALUES (?, ?, ?, ?)")
-      .run(title, content, author, image_url);
-    const newArticle = db.prepare("SELECT * FROM articles WHERE id = ?").get(info.lastInsertRowid);
-    emitChange("newArticle", newArticle);
-    res.status(201).json(newArticle);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.put("/api/articles/:id", (req, res) => {
-  const { id } = req.params;
-  const { title, content, author, image_url } = req.body;
-  try {
-    const existingArticle = db.prepare("SELECT * FROM articles WHERE id = ?").get(id);
-    if (!existingArticle) return res.status(404).json({ error: "Article not found." });
-    db.prepare(
-      "UPDATE articles SET title = ?, content = ?, author = ?, image_url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?"
-    ).run(
-      title || existingArticle.title,
-      content || existingArticle.content,
-      author || existingArticle.author,
-      image_url || existingArticle.image_url,
-      id
+    const { rowCount } = await db.query(
+      "DELETE FROM cms_collections WHERE id = $1 AND collection_key = 'reports'", [req.params.id]
     );
-    const updatedArticle = db.prepare("SELECT * FROM articles WHERE id = ?").get(id);
-    emitChange("updatedArticle", updatedArticle);
-    res.json(updatedArticle);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.delete("/api/articles/:id", (req, res) => {
-  const { id } = req.params;
-  try {
-    const info = db.prepare("DELETE FROM articles WHERE id = ?").run(id);
-    if (!info.changes) return res.status(404).json({ error: "Article not found." });
-    emitChange("deletedArticle", { id });
+    if (!rowCount) return res.status(404).json({ error: 'Report not found.' });
+    emitChange('reportDeleted', { id: Number(req.params.id) });
+    emitChange('cmsCollectionItemDeleted', { id: Number(req.params.id) });
     res.status(204).send();
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
+// ═══════════════════════════════════════════════════════════════════════════════
 // DONATIONS API
-app.get("/api/donations", (req, res) => {
+// ═══════════════════════════════════════════════════════════════════════════════
+app.get('/api/donations', async (_req, res) => {
   try {
-    const donations = db
-      .prepare("SELECT * FROM donations ORDER BY donated_at DESC")
-      .all();
-    res.json(donations);
+    const { rows } = await db.query('SELECT * FROM donations ORDER BY donated_at DESC');
+    res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-app.post("/api/donations", (req, res) => {
+app.post('/api/donations', async (req, res) => {
   const { donor_name, email, amount, currency, message } = req.body;
-  if (!donor_name || !amount) {
-    return res.status(400).json({ error: "Donor name and amount are required." });
-  }
+  if (!donor_name || !amount)
+    return res.status(400).json({ error: 'Donor name and amount are required.' });
   try {
-    const info = db
-      .prepare(
-        "INSERT INTO donations (donor_name, email, amount, currency, message) VALUES (?, ?, ?, ?, ?)"
-      )
-      .run(donor_name, email, amount, currency, message);
-    const newDonation = db.prepare("SELECT * FROM donations WHERE id = ?").get(info.lastInsertRowid);
-    emitChange("newDonation", newDonation);
-    res.status(201).json(newDonation);
+    const { rows } = await db.query(
+      'INSERT INTO donations (donor_name, email, amount, currency, message) VALUES ($1,$2,$3,$4,$5) RETURNING *',
+      [donor_name, email, amount, currency, message]
+    );
+    emitChange('newDonation', rows[0]);
+    res.status(201).json(rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// USERS API (for demonstration, in a real app, secure this with authentication)
-app.get("/api/users", (_req, res) => {
+// ═══════════════════════════════════════════════════════════════════════════════
+// USERS API
+// ═══════════════════════════════════════════════════════════════════════════════
+app.get('/api/users', async (_req, res) => {
   try {
-    const users = db.prepare("SELECT id, username, email, role FROM users").all();
-    res.json(users);
+    const { rows } = await db.query('SELECT id, username, email, role FROM users');
+    res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Audit Log API
-app.get("/api/audit-log", (req, res) => {
+// ═══════════════════════════════════════════════════════════════════════════════
+// AUDIT LOG API
+// ═══════════════════════════════════════════════════════════════════════════════
+app.get('/api/audit-log', async (_req, res) => {
   try {
-    const logs = db.prepare("SELECT * FROM cms_audit_log ORDER BY created_at DESC LIMIT 100").all();
-    res.json(logs);
+    const { rows } = await db.query(
+      'SELECT * FROM cms_audit_log ORDER BY created_at DESC LIMIT 100'
+    );
+    res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Basic Login Route (FOR DEMONSTRATION PURPOSES ONLY - NOT SECURE)
-app.post("/api/login", (req, res) => {
+// ═══════════════════════════════════════════════════════════════════════════════
+// LOGIN API
+// ═══════════════════════════════════════════════════════════════════════════════
+app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
-  if (!username || !password) {
-    return res.status(400).json({ error: "Username and password are required." });
-  }
+  if (!username || !password)
+    return res.status(400).json({ error: 'Username and password are required.' });
   try {
-    const user = db
-      .prepare("SELECT * FROM users WHERE username = ? AND password = ?")
-      .get(username, password);
-    if (!user) return res.status(401).json({ error: "Invalid username or password." });
-    res.json({
-      message: "Login successful",
-      user: { id: user.id, username: user.username, role: user.role },
-    });
+    const { rows } = await db.query(
+      'SELECT * FROM users WHERE username = $1 AND password = $2',
+      [username, password]
+    );
+    if (!rows.length) return res.status(401).json({ error: 'Invalid username or password.' });
+    const user = rows[0];
+    res.json({ message: 'Login successful', user: { id: user.id, username: user.username, role: user.role } });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-
-// Serve the admin dashboard
-app.get("/admin", (_req, res) => {
-  res.sendFile(path.join(__dirname, "admin", "dashboard.html"));
+// ── Admin dashboard ───────────────────────────────────────────────────────────
+app.get('/admin', (_req, res) => {
+  res.sendFile(path.join(__dirname, 'admin', 'dashboard.html'));
 });
 
-// Catch-all for undefined routes
-app.use((req, res) => {
-  res.status(404).sendFile(path.join(__dirname, "404.html"));
+// ── 404 fallback ──────────────────────────────────────────────────────────────
+app.use((_req, res) => {
+  res.status(404).sendFile(path.join(__dirname, '404.html'));
 });
 
-// Error handler — turns multer/upload errors (bad file type, too large, etc.)
-// into a JSON response instead of an HTML crash page.
+// ── Error handler ─────────────────────────────────────────────────────────────
 app.use((err, _req, res, _next) => {
   if (err) {
-    console.error("Request error:", err.message);
-    return res.status(400).json({ error: err.message || "Something went wrong." });
+    console.error('Request error:', err.message);
+    return res.status(400).json({ error: err.message || 'Something went wrong.' });
   }
 });
 
-// Socket.IO connection handling
-io.on("connection", (socket) => {
-  console.log("A user connected via WebSocket");
-  
-  // Listen for cms-update from dashboard and broadcast to all clients
-  socket.on("cms-update", (data) => {
-    console.log("Broadcasting CMS update to all clients:", data);
-    io.emit("cms-update", data);
+// ── Socket.IO ─────────────────────────────────────────────────────────────────
+io.on('connection', (socket) => {
+  console.log('A user connected via WebSocket');
+  socket.on('cms-update', (data) => {
+    console.log('Broadcasting CMS update to all clients:', data);
+    io.emit('cms-update', data);
   });
-  
-  socket.on("disconnect", () => {
-    console.log("User disconnected from WebSocket");
+  socket.on('disconnect', () => {
+    console.log('User disconnected from WebSocket');
   });
 });
 
-// Start the server
-server.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-  console.log(`Admin dashboard: http://localhost:${PORT}/admin`);
-});
+// ── Start ─────────────────────────────────────────────────────────────────────
+initCmsSchema()
+  .then(() => {
+    server.listen(PORT, () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+      console.log(`Admin dashboard: http://localhost:${PORT}/admin`);
+    });
+  })
+  .catch((err) => {
+    console.error('Failed to initialise database schema. Server not started.', err);
+    process.exit(1);
+  });

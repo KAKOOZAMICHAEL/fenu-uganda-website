@@ -3,4 +3,5 @@ node_modules/
 *.db-wal
 *.db
 .dist/
-data/fenu.db
+data/
+.env
