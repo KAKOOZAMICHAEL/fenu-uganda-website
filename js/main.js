@@ -173,10 +173,10 @@
       animateOut: baseAnimateOut,
       animateIn: baseAnimateIn,
       items: 1,
-      autoplay: true,
+      autoplay: false,
       smartSpeed: 1000,
       dots: false,
-      loop: true,
+      loop: false,
       nav: true,
       navText: [
         '<i class="bi bi-chevron-left"></i>',

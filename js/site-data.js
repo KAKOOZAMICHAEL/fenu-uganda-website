@@ -209,6 +209,7 @@
       renderPhotos(active.filter((x) => x.collection_key === "photos"));
       renderVideos(active.filter((x) => x.collection_key === "videos"));
       renderNews(active.filter((x) => x.collection_key === "news"));
+      renderOpportunities(active.filter((x) => x.collection_key === "opportunities"));
       renderCollectionPartners(active.filter((x) => x.collection_key === "partners"));
 
     } catch (e) { console.error("CMS collections error:", e); }
@@ -488,10 +489,115 @@
     `);
   }
 
+  function renderOpportunities(items) {
+    const container = $("#dynamicOpportunitiesGrid");
+    if (!container.length) return;
+    updateHubCount("#pubOpportunityCount", items.length, "opportunity");
+
+    if (!Array.isArray(items) || items.length === 0) {
+      container.removeClass("owl-carousel m-slider");
+      container.html('<div class="col-12"><div class="m-empty"><i class="fa fa-briefcase"></i>No opportunities have been published yet.</div></div>');
+      return;
+    }
+
+    if (container.hasClass("owl-loaded")) {
+      container.trigger("destroy.owl.carousel");
+      container.removeClass("owl-loaded owl-carousel");
+    }
+
+    window.fenuOpportunityItems = items;
+
+    const featured = items[0];
+    const featuredDate = new Date(featured.created_at).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+    const featuredContent = getArticleContent(featured) || featured.description || "";
+    const featuredWords = featuredContent.split(/\s+/).length;
+    const featuredReadTime = Math.max(1, Math.ceil(featuredWords / 200));
+    const listItems = items.slice(1, 4);
+
+    let listHtml = "";
+    if (listItems.length > 0) {
+      listHtml = `
+        <div class="m-pub-list-col">
+          ${listItems.map((item, i) => {
+            const date = new Date(item.created_at).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+            const itemContent = getArticleContent(item) || item.description || "";
+            const itemWords = itemContent.split(/\s+/).length;
+            const itemReadTime = Math.max(1, Math.ceil(itemWords / 200));
+            return `
+              <div class="m-pub-list-item m-fade-up" style="animation-delay:${(i % 3) * 0.05}s">
+                <div class="m-pub-list-img-wrap">
+                  <img src="${item.image_url || "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=300"}" alt="${escapeHtml(item.title)}" loading="lazy">
+                  <span class="m-pub-tag">OPPORTUNITY</span>
+                </div>
+                <div class="m-pub-list-content">
+                  <div>
+                    <div class="m-pub-meta">
+                      <span><i class="fa fa-calendar"></i> ${date}</span>
+                      <span><i class="fa fa-clock"></i> ${itemReadTime} min read</span>
+                    </div>
+                    <h4><a href="javascript:void(0)" onclick="window.openFenuOpportunity(${item.id})">${escapeHtml(item.title)}</a></h4>
+                  </div>
+                  <button class="m-pub-btn-outline" onclick="window.openFenuOpportunity(${item.id})">Read More</button>
+                </div>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      `;
+    }
+
+    container.html(`
+      <div class="m-pub-layout col-12">
+        <div class="m-pub-featured-col">
+          <div class="m-pub-featured m-fade-up">
+            <div class="m-pub-featured-img-wrap">
+              <img src="${featured.image_url || "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800"}" alt="${escapeHtml(featured.title)}" loading="lazy">
+              <span class="m-pub-tag">OPPORTUNITY</span>
+            </div>
+            <div class="m-pub-featured-body">
+              <div class="m-pub-meta">
+                <span><i class="fa fa-calendar"></i> ${featuredDate}</span>
+                <span><i class="fa fa-clock"></i> ${featuredReadTime} min read</span>
+              </div>
+              <h3><a href="javascript:void(0)" onclick="window.openFenuOpportunity(${featured.id})">${escapeHtml(featured.title)}</a></h3>
+              <p>${escapeHtml(featured.description || "")}</p>
+              <button class="m-pub-btn-black" onclick="window.openFenuOpportunity(${featured.id})">Read Opportunity <i class="fa fa-arrow-right"></i></button>
+            </div>
+          </div>
+        </div>
+        ${listHtml}
+      </div>
+    `);
+  }
+
+  window.openFenuOpportunity = function (id) {
+    const items = window.fenuOpportunityItems || [];
+    const item = items.find((n) => n.id === id);
+    if (!item) return;
+    const date = new Date(item.created_at).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+    const content = getArticleContent(item) || item.description || "";
+
+    $("#fenuArticleTitle").text(item.title);
+    $("#fenuArticleMeta").text(date);
+    $("#fenuArticleBody").text(content);
+    if (item.image_url) {
+      $("#fenuArticleImg").attr("src", item.image_url).show();
+    } else {
+      $("#fenuArticleImg").hide();
+    }
+
+    window.fenuCurrentArticle = { title: item.title, date, content };
+
+    const modalEl = document.getElementById("fenuArticleModal");
+    if (modalEl && window.bootstrap) {
+      new window.bootstrap.Modal(modalEl).show();
+    }
+  };
+
   // Opens the shared article-reading modal (markup lives once in news.html)
   // and wires up its "Download PDF" button for this specific article.
   window.openFenuArticle = function (id) {
-    const items = window.fenuNewsItems || [];
+    const items = window.fenuNewsItems || window.fenuOpportunityItems || [];
     const item = items.find((n) => n.id === id);
     if (!item) return;
     const date = new Date(item.created_at).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });

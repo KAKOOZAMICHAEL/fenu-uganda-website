@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>FENU Uganda - Publications</title>
+    <title>FENU Uganda - Opportunities</title>
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <meta content="FENU Uganda, education NGO Uganda, civil society education" name="keywords">
     <meta content="FENU Uganda is a national coalition of civil society organizations advocating for quality, equitable education for all in Uganda." name="description">
@@ -65,7 +65,7 @@
                             <a href="#" class="nav-link dropdown-toggle active" data-bs-toggle="dropdown"><b>Publications</b></a>
                             <div class="dropdown-menu bg-light m-0">
                                 <a href="news.html" class="dropdown-item">News</a>
-                                <a href="opportunities.html" class="dropdown-item">Opportunities</a>
+                                <a href="opportunities.html" class="dropdown-item active">Opportunities</a>
                                 <a href="reports.html" class="dropdown-item">Reports</a>
                             </div>
                         </div>
@@ -76,60 +76,49 @@
         </div>
     </div>
 
-    <div class="m-hero" data-cms-id="publications-hero-bg">
+    <div class="m-hero" data-cms-id="opportunities-hero-bg">
         <div class="m-hero-overlay"></div>
         <div class="container m-hero-inner">
-            <div class="m-hero-crumb"><a href="index.html">Home</a> / Publications</div>
-            <div class="m-eyebrow">Research &amp; Voice</div>
-            <h1 data-cms-id="publications-hero-title">Publications &amp; Resources</h1>
-            <p data-cms-id="publications-hero-subtitle">Research, Reports &amp; Policy Briefs</p>
+            <div class="m-hero-crumb"><a href="index.html">Home</a> / <a href="publications.html">Publications</a> / Opportunities</div>
+            <div class="m-eyebrow">Jobs &amp; Openings</div>
+            <h1 data-cms-id="opportunities-hero-title">Opportunities</h1>
+            <p data-cms-id="opportunities-hero-desc">Discover jobs, internships, and advocacy opportunities from FENU and partners.</p>
         </div>
     </div>
 
-    <div class="m-section">
+    <div class="m-section m-pub-section">
         <div class="container">
-            <div class="row g-4">
-                <div class="col-lg-6 m-reveal">
-                    <a href="news.html" class="m-hub-panel">
-                        <div class="m-hub-bg" style="background-image:url('https://images.unsplash.com/photo-1495020689067-958852a7765e?w=1200')"></div>
-                        <div class="m-hub-overlay"></div>
-                        <div class="m-hub-panel-body">
-                            <span class="m-hub-count" id="pubNewsCount">News</span>
-                            <h3 data-cms-id="publications-news-title">Stay Informed</h3>
-                            <p data-cms-id="publications-news-desc">Read our latest news articles and updates on education policy and advocacy in Uganda.</p>
-                            <span class="m-hub-arrow">Read the News <i class="fa fa-arrow-right"></i></span>
-                        </div>
-                    </a>
+            <div class="m-section-head text-center mx-auto">
+                <div class="m-eyebrow justify-content-center">Openings</div>
+                <h2>Current Opportunities</h2>
+                <p>Browse the latest career, consultancy, internship, and partnership opportunities.</p>
+            </div>
+            <div class="row g-4" id="dynamicOpportunitiesGrid">
+                <div class="col-12 text-center py-5"><div class="spinner-border text-primary"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade m-article-modal" id="fenuArticleModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title mb-0" id="fenuArticleTitle">Opportunity Title</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="col-lg-6 m-reveal">
-                    <a href="reports.html" class="m-hub-panel">
-                        <div class="m-hub-bg" style="background-image:url('https://images.unsplash.com/photo-1568667256549-094345857637?w=1200')"></div>
-                        <div class="m-hub-overlay"></div>
-                        <div class="m-hub-panel-body">
-                            <span class="m-hub-count" id="pubReportCount">Reports</span>
-                            <h3 data-cms-id="publications-reports-title">Our Research &amp; Analysis</h3>
-                            <p data-cms-id="publications-reports-desc">Download our reports, policy briefs, and research publications on education in Uganda.</p>
-                            <span class="m-hub-arrow">Browse Reports <i class="fa fa-arrow-right"></i></span>
-                        </div>
-                    </a>
+                <div class="modal-body">
+                    <div class="m-article-meta" id="fenuArticleMeta">Date</div>
+                    <img id="fenuArticleImg" src="" alt="" class="img-fluid rounded mb-3" style="max-height:320px;width:100%;object-fit:cover;display:none">
+                    <div class="m-article-body" id="fenuArticleBody"></div>
                 </div>
-                <div class="col-lg-6 m-reveal">
-                    <a href="opportunities.html" class="m-hub-panel">
-                        <div class="m-hub-bg" style="background-image:url('https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1200')"></div>
-                        <div class="m-hub-overlay"></div>
-                        <div class="m-hub-panel-body">
-                            <span class="m-hub-count" id="pubOpportunityCount">Opportunities</span>
-                            <h3 data-cms-id="publications-opportunities-title">Career &amp; Advocacy Openings</h3>
-                            <p data-cms-id="publications-opportunities-desc">Explore job openings, internships, and advocacy opportunities from our network.</p>
-                            <span class="m-hub-arrow">Browse Opportunities <i class="fa fa-arrow-right"></i></span>
-                        </div>
-                    </a>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="m-btn-download" onclick="window.downloadFenuArticlePdf()"><i class="fa fa-download"></i> Download PDF</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Footer Start -->
     <div class="container-fluid footer py-5 wow fadeIn" data-wow-delay="0.1s">
         <div class="container py-5">
             <div class="row g-5">
@@ -172,7 +161,6 @@
             </div>
         </div>
     </div>
-    <!-- Footer End -->
 
     <a href="#" class="btn btn-lg btn-primary btn-lg-square back-to-top"><i class="bi bi-arrow-up"></i></a>
 
@@ -183,23 +171,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/waypoints/4.0.1/jquery.waypoints.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/owl.carousel.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Counter-Up/1.0.0/jquery.counterup.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="js/main.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="js/site-data.js"></script>
-    <script>
-      Promise.all([
-        fetch('/api/cms/collections').then(r => r.json()),
-        fetch('/api/reports').then(r => r.json())
-      ]).then(([items, reports]) => {
-        const newsCount = items.filter(x => x.is_active && x.collection_key === 'news').length;
-        const opportunityCount = items.filter(x => x.is_active && x.collection_key === 'opportunities').length;
-        const n = document.getElementById('pubNewsCount');
-        const rep = document.getElementById('pubReportCount');
-        const opp = document.getElementById('pubOpportunityCount');
-        if (n) n.textContent = `${newsCount} article${newsCount === 1 ? '' : 's'}`;
-        if (rep) rep.textContent = `${reports.length} report${reports.length === 1 ? '' : 's'}`;
-        if (opp) opp.textContent = `${opportunityCount} opportunity${opportunityCount === 1 ? '' : 's'}`;
-      }).catch(() => {});
-    </script>
 </body>
 </html>

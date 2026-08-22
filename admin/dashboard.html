@@ -715,6 +715,8 @@
                     <div class="nav-children">
                         <div class="nav-link-custom nav-child" data-page="news"><i class="fa fa-newspaper"></i> News</div>
                         <div class="nav-link-custom nav-grandchild" data-page="manage-news"><i class="fa fa-list"></i> Manage News</div>
+                        <div class="nav-link-custom nav-child" data-page="opportunities"><i class="fa fa-briefcase"></i> Opportunities</div>
+                        <div class="nav-link-custom nav-grandchild" data-page="manage-opportunities"><i class="fa fa-list"></i> Manage Opportunities</div>
                         <div class="nav-link-custom nav-child" data-page="reports"><i class="fa fa-file-pdf"></i> Reports</div>
                         <div class="nav-link-custom nav-grandchild" data-page="manage-reports"><i class="fa fa-list"></i> Manage Reports</div>
                     </div>
@@ -942,12 +944,12 @@
             home: '/index.html', about: '/about.html', thematic: '/thematic.html',
             work: '/work.html', partners: '/partners.html', gallery: '/gallery.html',
             photos: '/photos.html', videos: '/videos.html',
-            publications: '/publications.html', news: '/news.html', reports: '/reports.html',
+            publications: '/publications.html', news: '/news.html', opportunities: '/opportunities.html', reports: '/reports.html',
             contact: '/contact.html',
             global: '/index.html', audit: null,
             'manage-partners': null, 'manage-team': null, 'manage-testimonials': null,
             'manage-photos': null, 'manage-videos': null, 'manage-news': null,
-            'manage-reports': null
+            'manage-opportunities': null, 'manage-reports': null
         };
 
         function loadPreview(pageKey) {
@@ -1081,14 +1083,6 @@
                             { id: "home-hero-desc-3", label: "Description Text", type: "textarea", placeholder: "Founded in 2001, FENU brings together NGOs, CBOs, and education stakeholders to drive lasting policy change across Uganda." },
                             { id: "home-hero-btn1-3", label: "First Button Text", type: "text", placeholder: "About FENU" },
                             { id: "home-hero-btn2-3", label: "Second Button Text", type: "text", placeholder: "Our Partners" }
-                        ]
-                    },
-                    {
-                        name: "Statistics Numbers (Blue Bar Below Slideshow)",
-                        fields: [
-                            { id: "home-stat-team", label: "Team Members Number", type: "text", placeholder: "20", help: "Shows '20+ Team Members'" },
-                            { id: "home-stat-groups", label: "Thematic Groups Number", type: "text", placeholder: "6", help: "Shows '6 Thematic Working Groups'" },
-                            { id: "home-stat-partners", label: "Partners Number", type: "text", placeholder: "10", help: "Shows '10+ Partners'" }
                         ]
                     },
                     {
@@ -1247,6 +1241,12 @@
                         name: "Vision Statement",
                         fields: [
                             { id: "about-vision", label: "Vision Text", type: "textarea", placeholder: "A Uganda where injustices in education policy and delivery have been overcome" }
+                        ]
+                    },
+                    {
+                        name: "Identity Statement",
+                        fields: [
+                            { id: "about-identity", label: "Identity Statement Text", type: "textarea", placeholder: "FENU aims to play a lead role in articulating the interests and expectations for a quality and equitable education for all" }
                         ]
                     },
                     {
@@ -1682,6 +1682,20 @@
                     }
                 ]
             },
+            opportunities: {
+                title: "Opportunities Page Content",
+                page_path: "opportunities.html",
+                sections: [
+                    {
+                        name: "Top Banner (Opportunities Page)",
+                        fields: [
+                            { id: "opportunities-hero-bg", label: "Background Photo", type: "image", placeholder: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1600", help: "Large background image behind the title" },
+                            { id: "opportunities-hero-title", label: "Page Title", type: "text", placeholder: "Opportunities" },
+                            { id: "opportunities-hero-desc", label: "Subtitle", type: "text", placeholder: "Discover jobs, internships, and advocacy opportunities." }
+                        ]
+                    }
+                ]
+            },
             reports: {
                 title: "Reports Page Content",
                 page_path: "reports.html",
@@ -1770,6 +1784,7 @@
             if (pageKey === 'manage-photos') { renderPhotosManager(); return; }
             if (pageKey === 'manage-videos') { renderVideosManager(); return; }
             if (pageKey === 'manage-news') { renderNewsManager(); return; }
+            if (pageKey === 'manage-opportunities') { renderOpportunitiesManager(); return; }
             if (pageKey === 'manage-reports') { renderReportsManager(); return; }
             
             if (!config) {
@@ -3229,6 +3244,27 @@
             loadNewsList();
         }
 
+        async function renderOpportunitiesManager() {
+            const html = `
+                <div class="page-title-bar">
+                    <h2><i class="fa fa-briefcase me-2" style="color:var(--fenu-orange)"></i>Manage Opportunities</h2>
+                    <button class="btn-add" onclick="addNewOpportunity()"><i class="fa fa-plus me-1"></i> Add Opportunity</button>
+                </div>
+                <div class="help-banner">
+                    <i class="fa fa-lightbulb"></i>
+                    <strong>Opportunities:</strong> Add advertisements, job listings, internships, and other openings for visitors to browse.
+                </div>
+                <div id="opportunitiesListWrap">
+                    <div class="text-center py-5">
+                        <div class="spinner-border" style="color: var(--fenu-orange)"></div>
+                        <p class="mt-2 text-muted">Loading opportunities...</p>
+                    </div>
+                </div>
+            `;
+            $('#pageEditor').html(html);
+            loadOpportunitiesList();
+        }
+
         function getNewsContent(item) {
             try {
                 const extra = item.extra_json ? JSON.parse(item.extra_json) : {};
@@ -3452,6 +3488,219 @@
             }
         }
 
+        async function loadOpportunitiesList() {
+            try {
+                const res = await fetch('/api/cms/collections?key=opportunities');
+                const items = await res.json();
+                let html = '';
+                items.forEach(item => {
+                    const date = new Date(item.created_at).toLocaleDateString();
+                    html += `
+                        <div class="card mb-3" id="opportunity-${item.id}">
+                            <div class="card-body">
+                                <div class="row align-items-start">
+                                    ${item.image_url ? `<div class="col-auto"><img src="${item.image_url}" style="width:80px;height:80px;object-fit:cover;border-radius:8px" onerror="this.style.display='none'"></div>` : ''}
+                                    <div class="col">
+                                        <h5 class="mb-1">${item.title}</h5>
+                                        <p class="mb-2 text-muted" style="font-size:0.85rem">${item.description ? item.description.substring(0, 100) + '...' : 'No excerpt'}</p>
+                                        <small class="text-muted"><i class="fa fa-calendar me-1"></i>${date}</small>
+                                    </div>
+                                    <div class="col-auto">
+                                        <button class="btn-add btn-sm me-2" onclick="editOpportunity(${item.id})"><i class="fa fa-edit"></i> Edit</button>
+                                        <button class="btn-delete btn-sm" onclick="deleteOpportunity(${item.id})"><i class="fa fa-trash"></i> Delete</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                $('#opportunitiesListWrap').html(html || '<div class="card p-4 text-center text-muted">No opportunities yet. Click "Add Opportunity" to create one.</div>');
+            } catch(e) {
+                console.error('Error loading opportunities:', e);
+                $('#opportunitiesListWrap').html('<div class="card p-4 text-center text-danger">Error loading opportunities. Please refresh the page.</div>');
+            }
+        }
+
+        function addNewOpportunity() {
+            const html = `
+                <div class="card mb-3" id="opportunityFormCard">
+                    <div class="card-header"><div class="section-icon"><i class="fa fa-plus"></i></div>Add Opportunity</div>
+                    <div class="card-body">
+                        <div class="field-group">
+                            <label class="field-label"><i class="fa fa-font"></i>Opportunity Title</label>
+                            <input type="text" class="form-control" id="opportunityTitle" placeholder="Opportunity headline">
+                        </div>
+                        <div class="field-group">
+                            <label class="field-label"><i class="fa fa-align-left"></i>Excerpt</label>
+                            <textarea class="form-control" id="opportunityExcerpt" rows="2" placeholder="Short summary shown on the card"></textarea>
+                        </div>
+                        <div class="field-group">
+                            <label class="field-label"><i class="fa fa-file-lines"></i>Opportunity Details</label>
+                            <textarea class="form-control" id="opportunityContent" rows="8" placeholder="Full details, responsibilities, requirements, and application information."></textarea>
+                        </div>
+                        <div class="field-group">
+                            <label class="field-label"><i class="fa fa-image"></i>Featured Image (Optional)</label>
+                            <div class="input-group mb-2">
+                                <input type="text" class="form-control" id="opportunityImage" placeholder="https://example.com/image.jpg or upload below">
+                            </div>
+                            <input type="file" class="form-control" id="opportunityImageFile" accept="image/*" onchange="uploadImage(this, 'opportunityImage')">
+                            <small class="text-muted"><i class="fa fa-info-circle"></i> Enter URL or upload from your computer</small>
+                            <div class="img-preview-wrap mt-2" id="prev-opportunityImage"><img src="" alt="preview" style="max-width:200px;max-height:150px;border-radius:8px;border:1px solid #eee;object-fit:cover" onerror="this.parentElement.style.display='none'"></div>
+                        </div>
+                        <div class="form-save-footer">
+                            <button class="btn btn-secondary" onclick="cancelOpportunityForm()">Cancel</button>
+                            <button class="btn-fenu" onclick="saveOpportunity()"><i class="fa fa-save"></i> Save Opportunity</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            $('#opportunitiesListWrap').prepend(html);
+            $('#opportunityImage').on('input', function() {
+                const val = $(this).val().trim();
+                if (val) {
+                    $('#prev-opportunityImage img').attr('src', val);
+                    $('#prev-opportunityImage').show();
+                } else {
+                    $('#prev-opportunityImage').hide();
+                }
+            });
+        }
+
+        function cancelOpportunityForm() {
+            $('#opportunityFormCard').remove();
+        }
+
+        async function editOpportunity(id) {
+            try {
+                const res = await fetch('/api/cms/collections?key=opportunities');
+                const items = await res.json();
+                const item = items.find(n => n.id === id);
+                if (!item) return;
+                const content = getNewsContent(item);
+                const html = `
+                    <div class="card mb-3" id="opportunityEditCard-${id}">
+                        <div class="card-header"><div class="section-icon"><i class="fa fa-edit"></i></div>Edit Opportunity</div>
+                        <div class="card-body">
+                            <div class="field-group">
+                                <label class="field-label"><i class="fa fa-font"></i>Opportunity Title</label>
+                                <input type="text" class="form-control" id="editOpportunityTitle-${id}" value="${item.title}">
+                            </div>
+                            <div class="field-group">
+                                <label class="field-label"><i class="fa fa-align-left"></i>Excerpt</label>
+                                <textarea class="form-control" id="editOpportunityExcerpt-${id}" rows="2">${item.description || ''}</textarea>
+                            </div>
+                            <div class="field-group">
+                                <label class="field-label"><i class="fa fa-file-lines"></i>Opportunity Details</label>
+                                <textarea class="form-control" id="editOpportunityContent-${id}" rows="8">${content}</textarea>
+                            </div>
+                            <div class="field-group">
+                                <label class="field-label"><i class="fa fa-image"></i>Featured Image (Optional)</label>
+                                <div class="input-group mb-2">
+                                    <input type="text" class="form-control" id="editOpportunityImage-${id}" value="${item.image_url || ''}">
+                                </div>
+                                <input type="file" class="form-control" accept="image/*" onchange="uploadImage(this, 'editOpportunityImage-${id}')">
+                                <small class="text-muted"><i class="fa fa-info-circle"></i> Enter URL or upload from your computer</small>
+                                <div class="img-preview-wrap mt-2" style="display:${item.image_url ? 'block' : 'none'}" id="prev-editOpportunityImage-${id}">
+                                    <img src="${item.image_url || ''}" alt="preview" style="max-width:200px;max-height:150px;border-radius:8px;border:1px solid #eee;object-fit:cover" onerror="this.parentElement.style.display='none'">
+                                </div>
+                            </div>
+                            <div class="form-save-footer">
+                                <button class="btn btn-secondary" onclick="cancelEditOpportunity(${id})">Cancel</button>
+                                <button class="btn-fenu" onclick="updateOpportunity(${id})"><i class="fa fa-save"></i> Update Opportunity</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                $(`#opportunity-${id}`).after(html);
+                $(`#opportunity-${id}`).hide();
+
+                $(`#editOpportunityImage-${id}`).on('input', function() {
+                    const val = $(this).val().trim();
+                    if (val) {
+                        $(`#prev-editOpportunityImage-${id} img`).attr('src', val);
+                        $(`#prev-editOpportunityImage-${id}`).show();
+                    } else {
+                        $(`#prev-editOpportunityImage-${id}`).hide();
+                    }
+                });
+            } catch(e) {
+                console.error('Error loading opportunity for edit:', e);
+                alert('Error loading opportunity details');
+            }
+        }
+
+        function cancelEditOpportunity(id) {
+            $(`#opportunityEditCard-${id}`).remove();
+            $(`#opportunity-${id}`).show();
+        }
+
+        async function updateOpportunity(id) {
+            const title = $(`#editOpportunityTitle-${id}`).val().trim();
+            if (!title) {
+                alert('Please enter opportunity title');
+                return;
+            }
+            const data = {
+                collection_key: 'opportunities',
+                title: title,
+                description: $(`#editOpportunityExcerpt-${id}`).val(),
+                image_url: $(`#editOpportunityImage-${id}`).val(),
+                extra_json: JSON.stringify({ content: $(`#editOpportunityContent-${id}`).val() }),
+                is_active: 1
+            };
+            try {
+                const btn = $(`#opportunityEditCard-${id} .btn-fenu`);
+                btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Updating...');
+                await fetch(`/api/cms/collections/${id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
+                $('#saveIndicator').fadeIn().delay(2000).fadeOut();
+                await loadOpportunitiesList();
+                socket.emit('cms-update', { page: 'opportunities.html' });
+            } catch(e) {
+                console.error('Error updating opportunity:', e);
+                alert('Error updating opportunity');
+            }
+        }
+
+        async function saveOpportunity() {
+            const title = $('#opportunityTitle').val().trim();
+            if (!title) {
+                alert('Please enter opportunity title');
+                return;
+            }
+            const data = {
+                collection_key: 'opportunities',
+                title: title,
+                description: $('#opportunityExcerpt').val(),
+                image_url: $('#opportunityImage').val(),
+                extra_json: JSON.stringify({ content: $('#opportunityContent').val() }),
+                is_active: 1
+            };
+            try {
+                const btn = $('#opportunityFormCard .btn-fenu');
+                btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Saving...');
+                await fetch('/api/cms/collections', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
+                $('#saveIndicator').fadeIn().delay(2000).fadeOut();
+                await loadOpportunitiesList();
+                socket.emit('cms-update', { page: 'opportunities.html' });
+            } catch(e) {
+                console.error('Error saving opportunity:', e);
+                alert('Error saving opportunity');
+            }
+        }
+
+        async function deleteOpportunity(id) {
+            if (!confirm('Are you sure you want to delete this opportunity? This action cannot be undone.')) return;
+            try {
+                await fetch(`/api/cms/collections/${id}`, { method: 'DELETE' });
+                $('#saveIndicator').fadeIn().delay(2000).fadeOut();
+                await loadOpportunitiesList();
+                socket.emit('cms-update', { page: 'opportunities.html' });
+            } catch(e) {
+                console.error('Error deleting opportunity:', e);
+                alert('Error deleting opportunity');
+            }
+        }
+
         async function renderAuditLog() {
             const html = `
                 <div class="page-title-bar">
@@ -3473,7 +3722,7 @@
                                     <option value="index.html">Home</option>
                                     <option value="about.html">About</option>
                                     <option value="thematic.html">Thematic</option>
-                                    <option value="work.html">Work</option>
+                                    <option value="work.html">Our Work</option>
                                     <option value="partners.html">Partners</option>
                                     <option value="gallery.html">Gallery</option>
                                     <option value="publications.html">Publications</option>
